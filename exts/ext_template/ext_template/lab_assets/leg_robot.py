@@ -4,7 +4,7 @@ from omni.isaac.lab.actuators import ActuatorNetMLPCfg, DCMotorCfg, ImplicitActu
 from omni.isaac.lab.assets.articulation import ArticulationCfg
 from exts.ext_template.ext_template.lab_assets import LOCAL_ASSETS_DATA_DIR
 
-LEG10_USD_PATH = f"{LOCAL_ASSETS_DATA_DIR}/Robots/Aidin/Leg/leg10/leg10.usd"
+LEG10_USD_PATH = f"{LOCAL_ASSETS_DATA_DIR}/Robots/Aidin/leg10/leg10.usd"
 
 LEG10_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
@@ -24,7 +24,7 @@ LEG10_CFG = ArticulationCfg(
         ),
     ),
     init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.0, 0.0, 0.88),
+        pos=(0.0, 0.0, 0.93),
         joint_pos={
             'R_hip_joint': 0.0,
             'R_hip2_joint': 0.0,
@@ -59,11 +59,11 @@ LEG10_CFG = ArticulationCfg(
             },
         ),
         "feet": ImplicitActuatorCfg(
-            joint_names_expr=[".*_toe"],
+            joint_names_expr=[".*_toe_joint"],
             effort_limit=20.16,
             velocity_limit=37.5,
-            stiffness={".*_toe": 30.0},
-            damping={".*_toe": 5.0},
+            stiffness={".*_toe_joint": 30.0},
+            damping={".*_toe_joint": 5.0},
         ),
     },
 )

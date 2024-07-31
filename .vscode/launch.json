@@ -19,6 +19,7 @@
             "name": "Python: Current File",
             "type": "debugpy",
             "request": "launch",
+            "args": ["--task", "Isaac-Velocity-Rough-LegRobot-v0", "--num_envs", "3", "--headless"],
             "program": "${file}",
             "console": "integratedTerminal",
             "envFile": "${workspaceFolder}/.vscode/.python.env",

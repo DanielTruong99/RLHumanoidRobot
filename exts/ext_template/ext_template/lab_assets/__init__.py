@@ -10,21 +10,15 @@ ISAACLAB_ASSETS_EXT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__)
 ISAACLAB_ASSETS_DATA_DIR = os.path.join(ISAACLAB_ASSETS_EXT_DIR, "data")
 """Path to the extension data directory."""
 
-ISAACLAB_ASSETS_METADATA = toml.load(os.path.join(ISAACLAB_ASSETS_EXT_DIR, "config", "extension.toml"))
-"""Extension metadata dictionary parsed from the extension.toml file."""
-
-# Configure the module-level variables
-__version__ = ISAACLAB_ASSETS_METADATA["package"]["version"]
-
-
 
 LOCAL_ASSETS_EXT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
-LOCAL_ASSETS_DATA_DIR = os.path.join(os.path.dirname(__file__), "lab_assets")
+LOCAL_ASSETS_DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 
 ##
 # Configuration for different assets.
 ##
 
+from .leg_robot import *
 # from .allegro import *
 # from .ant import *
 # from .anymal import *

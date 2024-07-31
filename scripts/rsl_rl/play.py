@@ -35,7 +35,8 @@ import torch
 from rsl_rl.runners import OnPolicyRunner
 
 # Import extensions to set up environment tasks
-import ext_template.tasks  # noqa: F401
+# import ext_template.tasks  # noqa: F401
+import exts.ext_template.ext_template.lab_tasks
 
 from omni.isaac.lab_tasks.utils import get_checkpoint_path, parse_env_cfg
 from omni.isaac.lab_tasks.utils.wrappers.rsl_rl import RslRlOnPolicyRunnerCfg, RslRlVecEnvWrapper, export_policy_as_onnx
@@ -71,7 +72,7 @@ def main():
     export_model_dir = os.path.join(os.path.dirname(resume_path), "exported")
     export_policy_as_onnx(ppo_runner.alg.actor_critic, export_model_dir, filename="policy.onnx")
 
-    # reset environment
+    # reset environment 
     obs, _ = env.get_observations()
     # simulate environment
     while simulation_app.is_running():
@@ -79,8 +80,10 @@ def main():
         with torch.inference_mode():
             # agent stepping
             actions = policy(obs)
+
             # env stepping
             obs, _, _, _ = env.step(actions)
+
 
     # close the simulator
     env.close()
