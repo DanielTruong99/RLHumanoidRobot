@@ -111,7 +111,7 @@ def main():
 
     policy_counter = 0
     policy_step_dt = env.env.step_dt
-    stop_state_log_s = 5.0
+    stop_state_log_s = 10.0
     # stop_state_log = env.env.max_episode_length
     stop_state_log = int(stop_state_log_s / policy_step_dt)
 
