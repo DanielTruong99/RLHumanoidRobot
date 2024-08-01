@@ -41,6 +41,37 @@ import exts.ext_template.ext_template.lab_tasks
 from omni.isaac.lab_tasks.utils import get_checkpoint_path, parse_env_cfg
 from omni.isaac.lab_tasks.utils.wrappers.rsl_rl import RslRlOnPolicyRunnerCfg, RslRlVecEnvWrapper, export_policy_as_onnx
 
+from omni.isaac.core.loggers.data_logger import DataLogger
+
+DOF_NAMES = [
+    'R_hip_joint',
+    'R_hip2_joint',
+    'R_thigh_joint',
+    'R_calf_joint',  
+    'R_toe_joint',
+    'L_hip_joint',
+    'L_hip2_joint',
+    'L_thigh_joint',
+    'L_calf_joint',  
+    'L_toe_joint'
+]
+
+import numpy as np 
+import pandas as pd
+from collections import defaultdict
+class Logger:
+    def __init__(self):
+        self.state_log = defaultdict(list)
+    
+    def log_state(self, key, value):
+        self.state_log[key].append(value)
+
+    def log_states(self, dict):
+        for key, value in dict.items():
+            self.log_state(key, value)
+
+    def save_log(self, path):
+        pd.DataFrame(self.state_log).to_csv(path, index=False)
 
 def main():
     """Play with RSL-RL agent."""
@@ -72,8 +103,18 @@ def main():
     export_model_dir = os.path.join(os.path.dirname(resume_path), "exported")
     export_policy_as_onnx(ppo_runner.alg.actor_critic, export_model_dir, filename="policy.onnx")
 
+    #! Create a logger
+    data_logger = Logger()
+
     # reset environment 
     obs, _ = env.get_observations()
+
+    policy_counter = 0
+    policy_step_dt = env.env.step_dt
+    stop_state_log_s = 5.0
+    # stop_state_log = env.env.max_episode_length
+    stop_state_log = int(stop_state_log_s / policy_step_dt)
+
     # simulate environment
     while simulation_app.is_running():
         # run everything in inference mode
@@ -83,6 +124,30 @@ def main():
 
             # env stepping
             obs, _, _, _ = env.step(actions)
+
+            policy_counter += 1
+
+            if policy_counter < stop_state_log:
+                data_frame = {
+                    'time_step': policy_counter*policy_step_dt,
+                    'base_x': env.env.scene["robot"].data.root_pos_w[0, 0].item(),
+                    'base_y': env.env.scene["robot"].data.root_pos_w[0, 1].item(),
+                    'base_z': env.env.scene["robot"].data.root_pos_w[0, 2].item(),
+                    'base_vx': env.env.scene["robot"].data.root_lin_vel_b[0, 0].item(),
+                    'base_vy': env.env.scene["robot"].data.root_lin_vel_b[0, 1].item(),
+                    'base_vz': env.env.scene["robot"].data.root_lin_vel_b[0, 2].item(),
+                    'base_wx': env.env.scene["robot"].data.root_ang_vel_b[0, 0].item(),
+                    'base_wy': env.env.scene["robot"].data.root_ang_vel_b[0, 1].item(),
+                    'base_wz': env.env.scene["robot"].data.root_ang_vel_b[0, 2].item(),
+                    **{'pos_' + key : env.env.scene["robot"].data.joint_pos[0, index].item() for index, key in enumerate(DOF_NAMES)},
+                    **{'vel_' + key : env.env.scene["robot"].data.joint_vel[0, index].item() for index, key in enumerate(DOF_NAMES)},
+                    **{'torque_' + key : env.env.scene["robot"].data.applied_torque[0, index].item() for index, key in enumerate(DOF_NAMES)},
+                }
+
+                data_logger.log_states(data_frame)
+            else:
+                data_logger.save_log('analysis/data/state_log.csv')
+                
 
 
     # close the simulator

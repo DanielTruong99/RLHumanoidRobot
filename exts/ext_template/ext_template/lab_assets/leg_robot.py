@@ -1,6 +1,6 @@
 import os
 import omni.isaac.lab.sim as sim_utils
-from omni.isaac.lab.actuators import ActuatorNetMLPCfg, DCMotorCfg, ImplicitActuatorCfg
+from omni.isaac.lab.actuators import ActuatorNetMLPCfg, DCMotorCfg, ImplicitActuatorCfg, IdealPDActuatorCfg
 from omni.isaac.lab.assets.articulation import ArticulationCfg
 from exts.ext_template.ext_template.lab_assets import LOCAL_ASSETS_DATA_DIR
 
@@ -24,7 +24,7 @@ LEG10_CFG = ArticulationCfg(
         ),
     ),
     init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.0, 0.0, 0.93),
+        pos=(0.0, 0.0, 0.9),
         joint_pos={
             'R_hip_joint': 0.0,
             'R_hip2_joint': 0.0,
@@ -41,7 +41,7 @@ LEG10_CFG = ArticulationCfg(
     ),
     soft_joint_pos_limit_factor=0.9,
     actuators={
-        "legs": ImplicitActuatorCfg(
+        "legs": IdealPDActuatorCfg(
             joint_names_expr=[".*_hip_joint", ".*_hip2_joint", ".*_thigh_joint", ".*_calf_joint"],
             effort_limit=120.75,
             velocity_limit=301.42,
@@ -58,7 +58,7 @@ LEG10_CFG = ArticulationCfg(
                 ".*_calf_joint": 5.0,
             },
         ),
-        "feet": ImplicitActuatorCfg(
+        "feet": IdealPDActuatorCfg(
             joint_names_expr=[".*_toe_joint"],
             effort_limit=20.16,
             velocity_limit=37.5,
