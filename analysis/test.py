@@ -24,19 +24,19 @@ def plot_base_velocity():
     df.plot(x='time_step', y='base_vy', ax=axs[1], legend=False)
     df.plot(x='time_step', y='base_wz', ax=axs[2], legend=False)
 
-    axs[0].hlines(y=1, xmin=0, xmax=10, colors='r', linestyles='--', label='command vx')
+    # axs[0].hlines(y=1, xmin=0, xmax=10, colors='r', linestyles='--', label='command vx')
     axs[0].set_xlabel('Time (s)')
     axs[0].set_ylabel('$V_x$ (m/s)')
     axs[0].grid(True)
     axs[0].legend()
 
-    axs[1].hlines(y=0, xmin=0, xmax=10, colors='r', linestyles='--', label='command vy')
+    # axs[1].hlines(y=0, xmin=0, xmax=10, colors='r', linestyles='--', label='command vy')
     axs[1].set_xlabel('Time (s)')
     axs[1].set_ylabel('$V_y$ (m/s)')
     axs[1].grid(True)
     axs[1].legend()
 
-    axs[2].hlines(y=0, xmin=0, xmax=10, colors='r', linestyles='--', label='command wz')
+    # axs[2].hlines(y=0, xmin=0, xmax=10, colors='r', linestyles='--', label='command wz')
     axs[2].set_xlabel('Time (s)')
     axs[2].set_ylabel('$w_z$ (m/s)')
     axs[2].grid(True)
@@ -75,6 +75,6 @@ def plot_joint_positions():
     plt.show()
 
 if __name__ == "__main__":
-    # plot_vel_tracking()
     # plot_base_velocity()
     plot_dof_torque()
+    # plot_joint_positions()

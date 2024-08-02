@@ -284,17 +284,48 @@ class RewardsCfg:
         height: 2.0
         joint_regularization: 1.0
     """
-    orientation = RewTerm(
-        func=custom_mdp.flat_orientation_exp, weight=5.0,
+    # orientation = RewTerm(
+    #     func=custom_mdp.flat_orientation_exp, weight=5.0,
+    #     params={
+    #         "asset_cfg": SceneEntityCfg("robot"),
+    #         "std": math.sqrt(0.5),
+    #     },
+    # )
+
+    # #! Temporaly disabled height_scan, instead use base height
+    # base_height = RewTerm(
+    #     func=custom_mdp.base_height_exp, weight=2.0,
+    #     params={
+    #         "asset_cfg": SceneEntityCfg("robot"),
+    #         "target_height": 0.77,
+    #         "std": math.sqrt(0.5),
+    #     },
+    # )
+
+    # joint_regularization = RewTerm(
+    #     func=custom_mdp.joint_regulization_exp, weight=1.0,
+    #     params={
+    #         "asset_cfg": SceneEntityCfg("robot"),
+    #         "std": math.sqrt(0.5),
+    #     }
+    # )
+
+    """
+        # TODO Potential-based rewards
+        orientation: 1.0
+        height: 1.0
+        joint_regularization: 1.0
+    """
+    pb_orientation = RewTerm(
+        func=custom_mdp.pb_flat_orientation_exp, weight=1.0,
         params={
             "asset_cfg": SceneEntityCfg("robot"),
             "std": math.sqrt(0.5),
         },
     )
 
-    #! Temporaly disabled height_scan, instead use base height
-    base_height = RewTerm(
-        func=custom_mdp.base_height_exp, weight=2.0,
+    pb_base_height = RewTerm(
+        func=custom_mdp.pb_base_height_exp, weight=1.0,
         params={
             "asset_cfg": SceneEntityCfg("robot"),
             "target_height": 0.77,
@@ -302,8 +333,8 @@ class RewardsCfg:
         },
     )
 
-    joint_regularization = RewTerm(
-        func=custom_mdp.joint_regulization_exp, weight=1.0,
+    pb_joint_regularization = RewTerm(
+        func=custom_mdp.pb_joint_regulization_exp, weight=1.0,
         params={
             "asset_cfg": SceneEntityCfg("robot"),
             "std": math.sqrt(0.5),
@@ -401,25 +432,25 @@ class LegRobotRoughEnvCfg_PLAY(LegRobotRoughEnvCfg):
         super().__post_init__()
 
 
-        self.scene.terrain = TerrainImporterCfg(
-            prim_path="/World/ground",
-            terrain_type="generator",
-            terrain_generator=ROUGH_TERRAINS_CFG,
-            max_init_terrain_level=5,
-            collision_group=-1,
-            physics_material=sim_utils.RigidBodyMaterialCfg(
-                friction_combine_mode="multiply",
-                restitution_combine_mode="multiply",
-                static_friction=1.0,
-                dynamic_friction=1.0,
-            ),
-            visual_material=sim_utils.MdlFileCfg(
-                mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
-                project_uvw=True,
-                texture_scale=(0.25, 0.25),
-            ),
-            debug_vis=False,
-        )
+        # self.scene.terrain = TerrainImporterCfg(
+        #     prim_path="/World/ground",
+        #     terrain_type="generator",
+        #     terrain_generator=ROUGH_TERRAINS_CFG,
+        #     max_init_terrain_level=5,
+        #     collision_group=-1,
+        #     physics_material=sim_utils.RigidBodyMaterialCfg(
+        #         friction_combine_mode="multiply",
+        #         restitution_combine_mode="multiply",
+        #         static_friction=1.0,
+        #         dynamic_friction=1.0,
+        #     ),
+        #     visual_material=sim_utils.MdlFileCfg(
+        #         mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
+        #         project_uvw=True,
+        #         texture_scale=(0.25, 0.25),
+        #     ),
+        #     debug_vis=False,
+        # )
 
 
         self.scene.num_envs = 1
@@ -446,7 +477,7 @@ class LegRobotRoughEnvCfg_PLAY(LegRobotRoughEnvCfg):
 
         #! Just for debug purposes
         #! Should be commented out when actually trainning
-        self.scene.height_scanner.debug_vis = True
+        self.scene.height_scanner.debug_vis = False
         self.viewer = ViewerCfg(
             eye=(3, 3, 3),
             origin_type='asset_root',
@@ -455,5 +486,5 @@ class LegRobotRoughEnvCfg_PLAY(LegRobotRoughEnvCfg):
         )
 
         # self.sim.render_interval = self.decimation * 3
-        # self.scene.contact_forces.debug_vis = True
+        self.scene.contact_forces.debug_vis = True
  

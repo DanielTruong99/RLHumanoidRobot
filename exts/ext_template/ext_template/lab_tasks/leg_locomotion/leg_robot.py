@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING
 from omni.isaac.lab.envs import ManagerBasedEnv
 from omni.isaac.lab.envs.manager_based_rl_env_cfg import ManagerBasedRLEnvCfg
 from omni.isaac.lab.envs.common import VecEnvStepReturn
+from . import mdp as custom_mdp
+from omni.isaac.lab.managers.reward_manager import RewardTermCfg
 
 class CustomActionManager(ActionManager):
     def __init__(self, cfg: object, env: ManagerBasedEnv):
@@ -72,6 +74,16 @@ class LegRobotEnv(ManagerBasedRLEnv):
         # note: checked here once to avoid multiple checks within the loop
         is_rendering = self.sim.has_gui() or self.sim.has_rtx_sensors()
 
+        # ! Custom pre physic step callback
+        # * Cache the reward for potential-based 
+        # self.reward_manager.get_term_cfg("pb_flat_orientation_exp)")
+        pb_flat_cfg = self.reward_manager.get_term_cfg("pb_orientation").params
+        pb_base_cfg = self.reward_manager.get_term_cfg("pb_base_height").params
+        pb_joint_regulization_cfg = self.reward_manager.get_term_cfg("pb_joint_regularization").params
+        self.rwd_oriPrev = custom_mdp.flat_orientation_exp(env=self, **pb_flat_cfg) #type: ignore
+        self.rwd_baseHeightPrev = custom_mdp.base_height_exp(env=self, **pb_base_cfg) #type: ignore
+        self.rwd_jointRegPrev = custom_mdp.joint_regulization_exp(env=self, **pb_joint_regulization_cfg) #type: ignore
+
         # perform physics stepping
         for _ in range(self.cfg.decimation):
             self._sim_step_counter += 1
@@ -95,6 +107,7 @@ class LegRobotEnv(ManagerBasedRLEnv):
         self.common_step_counter += 1  # total step (common for all envs)
 
         # ! Custom post physic step callback
+        # * Update the phase
         self.phase = torch.fmod(self.phase + self.physics_dt, 1.0)
 
         # -- check terminations

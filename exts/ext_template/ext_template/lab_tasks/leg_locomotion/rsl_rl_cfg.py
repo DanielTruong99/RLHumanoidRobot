@@ -15,7 +15,7 @@ from omni.isaac.lab_tasks.utils.wrappers.rsl_rl import (
 @configclass
 class LegRobotRoughPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 28
-    max_iterations = 10000
+    max_iterations = 30000
     save_interval = 50
     experiment_name = "leg_robot_rough"
     empirical_normalization = False

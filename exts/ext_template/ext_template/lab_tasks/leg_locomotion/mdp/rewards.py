@@ -48,6 +48,10 @@ def joint_regulization_exp(env: ManagerBasedRLEnv, std: float, asset_cfg: SceneE
     rewards = rewards / 4.0
     return rewards
 
+def pb_joint_regulization_exp(env: LegRobotEnv, std: float, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    delta_phi = ~env.reset_buf * (joint_regulization_exp(env, std, asset_cfg) - env.rwd_jointRegPrev)    
+    return delta_phi / env.step_dt
+
 def base_height_exp(
     env: ManagerBasedRLEnv, target_height: float, std: float,  asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
 ) -> torch.Tensor:
@@ -62,6 +66,12 @@ def base_height_exp(
     error = torch.square(asset.data.root_pos_w[:, 2] - target_height)
     return torch.exp(-error/std**2)
 
+def pb_base_height_exp(env: LegRobotEnv, target_height: float, std: float,  asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+    ) -> torch.Tensor:
+
+    delta_phi = ~env.reset_buf * (base_height_exp(env, target_height, std, asset_cfg) - env.rwd_baseHeightPrev)    
+    return delta_phi / env.step_dt
+
 def flat_orientation_exp(env: ManagerBasedRLEnv, std: float,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"), 
     ) -> torch.Tensor:
@@ -70,5 +80,11 @@ def flat_orientation_exp(env: ManagerBasedRLEnv, std: float,
     asset: RigidObject = env.scene[asset_cfg.name]
     error = torch.sum(torch.square(asset.data.projected_gravity_b[:, :2]), dim=1)
     return torch.exp(-error/std**2)
+
+def pb_flat_orientation_exp(env: LegRobotEnv, std: float,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"), 
+    ) -> torch.Tensor:
+    delta_phi = ~env.reset_buf * (flat_orientation_exp(env, std, asset_cfg) - env.rwd_oriPrev)    
+    return delta_phi / env.step_dt
 
 
