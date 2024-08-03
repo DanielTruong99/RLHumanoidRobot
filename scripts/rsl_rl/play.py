@@ -125,6 +125,10 @@ def main():
             # env stepping
             obs, _, _, _ = env.step(actions)
 
+            obs[:, 9] = 0.3
+            obs[:, 10] = 0.0
+            obs[:, 11] = 0.0
+
             policy_counter += 1
 
             if policy_counter < stop_state_log:
