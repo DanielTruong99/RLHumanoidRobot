@@ -32,7 +32,7 @@ import gymnasium as gym
 import os
 import torch
 
-from rsl_rl.runners import OnPolicyRunner
+from learning.custom_rsl_rl.runners import AMPOnPolicyRunner
 
 # Import extensions to set up environment tasks
 # import ext_template.tasks  # noqa: F401
@@ -92,7 +92,7 @@ def main():
     print(f"[INFO]: Loading model checkpoint from: {resume_path}")
 
     # load previously trained model
-    ppo_runner = OnPolicyRunner(env, agent_cfg.to_dict(), log_dir=None, device=agent_cfg.device)
+    ppo_runner = AMPOnPolicyRunner(env, agent_cfg.to_dict(), log_dir=None, device=agent_cfg.device)
     ppo_runner.load(resume_path)
     print(f"[INFO]: Loading model checkpoint from: {resume_path}")
 
@@ -150,7 +150,7 @@ def main():
 
                 data_logger.log_states(data_frame)
             else:
-                data_logger.save_log('analysis/data/state_log.csv')
+                data_logger.save_log('analysis/data/amp/state_log.csv')
                 
 
 

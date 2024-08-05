@@ -3,40 +3,11 @@ import numpy as np
 import time
 import pybullet
 import pybullet_data as pd
-from gpugym.envs.leg_amp.amp.poselib.poselib.core.rotation3d import *
-from gpugym.envs.leg_amp.amp.poselib.poselib.skeleton.skeleton3d import SkeletonTree, SkeletonState, SkeletonMotion
-from gpugym.envs.leg_amp.amp.poselib.poselib.visualization.common import plot_skeleton_state
-
-class CustomSkeletonMotion(SkeletonMotion):
-    def __init__(self, tensor_backend, skeleton_tree, is_local, *args, **kwargs):
-        super().__init__(tensor_backend, skeleton_tree, is_local, *args, **kwargs)
-        self._dof_pos = None 
-        self._dof_vel = None 
-
-    @property
-    def dof_pos(self):
-        return self._dof_pos
-    
-    @property
-    def dof_vel(self):
-        return self._dof_vel
-    
-    def set_dof_state(self, dof_pos):
-        self._dof_pos = dof_pos
-        self._compute_dof_vel()
-
-    def _compute_dof_vel(self):
-        if self._dof_pos is None:
-            raise ValueError("dof_pos is not set")
-        
-        time_delta = 1.0 / self.fps
-        theta = self._dof_pos
-        self._dof_vel = torch.from_numpy(
-            filters.gaussian_filter1d(
-                np.gradient(theta, axis=0), 2, axis=0, mode="nearest"
-            )
-            / time_delta,
-        )
+from poselib.core.rotation3d import *
+from poselib.skeleton.skeleton3d import SkeletonTree, SkeletonState, SkeletonMotion, CustomSkeletonMotion
+from poselib.visualization.common import plot_skeleton_state
+import os
+import scipy.ndimage.filters as filters
 
 ''' Pybullet setup'''
 p = pybullet
@@ -47,10 +18,12 @@ pybullet.setGravity(0, 0, 0)
 
 #* load assets
 ground = pybullet.loadURDF('plane.urdf')
-leg_robot = pybullet.loadURDF('../../../../assets/urdf/leg_robot/leg.urdf', [0, 0, 0.0], [0, 0, 0, 1])
+assets_path = "/../../../../exts/ext_template/ext_template/lab_assets/urdf"
+urdf_file_path = os.path.join(assets_path, "leg10/leg10.urdf")
+leg_robot = pybullet.loadURDF(urdf_file_path, [0, 0, 0.0], [0, 0, 0, 1])
 
 '''Motion capture setup'''
-leg_robot_motion = SkeletonMotion.from_file("data/07_01_cmu_amp.npy")
+leg_robot_motion = CustomSkeletonMotion.from_file("data/07_04_cmu_amp.npy")
 pelvis_index = leg_robot_motion.skeleton_tree._node_indices['pelvis']
 leftfoot_index = leg_robot_motion.skeleton_tree._node_indices['left_foot']
 rightfoot_index = leg_robot_motion.skeleton_tree._node_indices['right_foot']
@@ -60,6 +33,7 @@ rightfoot_index = leg_robot_motion.skeleton_tree._node_indices['right_foot']
 num_frames = leg_robot_motion.root_translation.shape[0]
 # time_step = 1.0/leg_robot_motion.fps
 time_step = 1.0/60
+dof_pose = np.zeros([num_frames, pybullet.getNumJoints(leg_robot)], dtype=np.float64)
 for frame in range(num_frames):
     #* get kinematic information from the motion
     pelvis_pos = leg_robot_motion.global_translation[frame, pelvis_index, ...]
@@ -114,6 +88,9 @@ for frame in range(num_frames):
         )
         dof_pos_solution[index * n : (index + 1) * n] = list(joint_solution[index * n : (index + 1) * n])
     
+    #TODO: collect dof position solution 
+    dof_pose[frame] = dof_pos_solution
+
     #* set the kinematic information to the robot
     # dof_pos_solution = [0, 0, -torch.pi/3, 0.0, 0.0, 0, 0, -torch.pi/3, 0.0, 0.0]
     for joint_index in range(pybullet.getNumJoints(leg_robot)):
@@ -126,6 +103,8 @@ for frame in range(num_frames):
     #* watting for the time to match the motion
     time.sleep(time_step)
 
+leg_robot_motion.set_dof_state(dof_pose)
+leg_robot_motion.to_file("data/retargeted_slow_waking_motion.npy")
 
 '''End simulation'''
 pybullet.disconnect()

@@ -26,13 +26,13 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from isaacgymenvs.utils.torch_jit_utils import quat_mul, quat_from_angle_axis
+from omni.isaac.lab.utils.math import quat_mul, quat_from_angle_axis
 import torch
 import json
 import numpy as np
 
 from poselib.core.rotation3d import *
-from poselib.skeleton.skeleton3d import SkeletonTree, SkeletonState, SkeletonMotion
+from poselib.skeleton.skeleton3d import SkeletonTree, SkeletonState, SkeletonMotion, CustomSkeletonMotion
 from poselib.visualization.common import plot_skeleton_state, plot_skeleton_motion_interactive
 
 """

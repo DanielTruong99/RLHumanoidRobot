@@ -35,7 +35,7 @@ import numpy as np
 import torch
 
 from ..core import *
-# from .backend.fbx.fbx_read_wrapper import fbx_to_array
+from .backend.fbx.fbx_read_wrapper import fbx_to_array
 import scipy.ndimage.filters as filters
 
 
@@ -1188,64 +1188,66 @@ class SkeletonMotion(SkeletonState):
             ]
         )
 
-    # @classmethod
-    # def from_fbx(
-    #     cls: Type["SkeletonMotion"],
-    #     fbx_file_path,
-    #     skeleton_tree=None,
-    #     is_local=True,
-    #     fps=120,
-    #     root_joint="",
-    #     root_trans_index=0,
-    #     *args,
-    #     **kwargs,
-    # ) -> "SkeletonMotion":
-    #     """
-    #     Construct a skeleton motion from a fbx file (TODO - generalize this). If the skeleton tree
-    #     is not given, it will use the first frame of the mocap to construct the skeleton tree.
+    @classmethod
+    def from_fbx(
+        cls: Type["SkeletonMotion"],
+        fbx_file_path,
+        skeleton_tree=None,
+        is_local=True,
+        fps=120,
+        root_joint="",
+        root_trans_index=0,
+        *args,
+        **kwargs,
+    ) -> "SkeletonMotion":
+        """
+        Construct a skeleton motion from a fbx file (TODO - generalize this). If the skeleton tree
+        is not given, it will use the first frame of the mocap to construct the skeleton tree.
 
-    #     :param fbx_file_path: the path of the fbx file
-    #     :type fbx_file_path: string
-    #     :param fbx_configs: the configuration in terms of {"tmp_path": ..., "fbx_py27_path": ...}
-    #     :type fbx_configs: dict
-    #     :param skeleton_tree: the optional skeleton tree that the rotation will be applied to
-    #     :type skeleton_tree: SkeletonTree, optional
-    #     :param is_local: the state vector uses local or global rotation as the representation
-    #     :type is_local: bool, optional, default=True
-    #     :param fps: FPS of the FBX animation
-    #     :type fps: int, optional, default=120
-    #     :param root_joint: the name of the root joint for the skeleton
-    #     :type root_joint: string, optional, default="" or the first node in the FBX scene with animation data
-    #     :param root_trans_index: index of joint to extract root transform from
-    #     :type root_trans_index: int, optional, default=0 or the root joint in the parsed skeleton
-    #     :rtype: SkeletonMotion
-    #     """
-    #     joint_names, joint_parents, transforms, fps = fbx_to_array(
-    #         fbx_file_path, root_joint, fps
-    #     )
-    #     # swap the last two axis to match the convention
-    #     local_transform = euclidean_to_transform(
-    #         transformation_matrix=torch.from_numpy(
-    #             np.swapaxes(np.array(transforms), -1, -2),
-    #         ).float()
-    #     )
-    #     local_rotation = transform_rotation(local_transform)
-    #     root_translation = transform_translation(local_transform)[..., root_trans_index, :]
-    #     joint_parents = torch.from_numpy(np.array(joint_parents)).int()
+        :param fbx_file_path: the path of the fbx file
+        :type fbx_file_path: string
+        :param fbx_configs: the configuration in terms of {"tmp_path": ..., "fbx_py27_path": ...}
+        :type fbx_configs: dict
+        :param skeleton_tree: the optional skeleton tree that the rotation will be applied to
+        :type skeleton_tree: SkeletonTree, optional
+        :param is_local: the state vector uses local or global rotation as the representation
+        :type is_local: bool, optional, default=True
+        :param fps: FPS of the FBX animation
+        :type fps: int, optional, default=120
+        :param root_joint: the name of the root joint for the skeleton
+        :type root_joint: string, optional, default="" or the first node in the FBX scene with animation data
+        :param root_trans_index: index of joint to extract root transform from
+        :type root_trans_index: int, optional, default=0 or the root joint in the parsed skeleton
+        :rtype: SkeletonMotion
+        """
+        joint_names, joint_parents, transforms, fps = fbx_to_array(
+            fbx_file_path, root_joint, fps
+        )
+        # swap the last two axis to match the convention
+        local_transform = euclidean_to_transform(
+            transformation_matrix=torch.from_numpy(
+                np.swapaxes(np.array(transforms), -1, -2),
+            ).float()
+        )
 
-    #     if skeleton_tree is None:
-    #         local_translation = transform_translation(local_transform).reshape(
-    #             -1, len(joint_parents), 3
-    #         )[0]
-    #         skeleton_tree = SkeletonTree(joint_names, joint_parents, local_translation)
-    #     skeleton_state = SkeletonState.from_rotation_and_root_translation(
-    #         skeleton_tree, r=local_rotation, t=root_translation, is_local=True
-    #     )
-    #     if not is_local:
-    #         skeleton_state = skeleton_state.global_repr()
-    #     return cls.from_skeleton_state(
-    #         skeleton_state=skeleton_state, fps=fps
-    #     )
+        local_rotation = transform_rotation(local_transform)
+        root_translation = transform_translation(local_transform)[..., root_trans_index, :]
+        joint_parents = torch.from_numpy(np.array(joint_parents)).int()
+        
+
+        if skeleton_tree is None:
+            local_translation = transform_translation(local_transform).reshape(
+                -1, len(joint_parents), 3
+            )[0]
+            skeleton_tree = SkeletonTree(joint_names, joint_parents, local_translation)
+        skeleton_state = SkeletonState.from_rotation_and_root_translation(
+            skeleton_tree, r=local_rotation, t=root_translation, is_local=True
+        )
+        if not is_local:
+            skeleton_state = skeleton_state.global_repr()
+        return cls.from_skeleton_state(
+            skeleton_state=skeleton_state, fps=fps
+        )
 
     @staticmethod
     def _compute_velocity(p, time_delta, guassian_filter=True):
@@ -1417,6 +1419,8 @@ class SkeletonMotion(SkeletonState):
             z_up,
         )
 
+
+
 class CustomSkeletonMotion(SkeletonMotion):
     def __init__(self, tensor_backend, skeleton_tree, is_local, *args, **kwargs):
         super().__init__(tensor_backend, skeleton_tree, is_local, *args, **kwargs)
@@ -1433,8 +1437,6 @@ class CustomSkeletonMotion(SkeletonMotion):
         avel = TensorUtils.from_dict(
             dict_repr["global_angular_velocity"], *args, **kwargs
         )
-        dof_pos = TensorUtils.from_dict(dict_repr["dof_pos"], *args, **kwargs)
-        dof_vel = TensorUtils.from_dict(dict_repr["dof_vel"], *args, **kwargs)
 
         instance = cls(
             CustomSkeletonMotion._to_state_vector(rot, rt, vel, avel),
@@ -1445,8 +1447,20 @@ class CustomSkeletonMotion(SkeletonMotion):
             fps=dict_repr["fps"],
         )
 
-        instance.dof_pos = dof_pos
-        instance.dof_vel = dof_vel
+        """
+            retarget_motion.py, fbx_importer.py both used SkeletonMotion to generate
+            he motion file that does not contains the dof_pos and dof_vel features.
+            Therefore, when the script custom_retarget_motion.py load the motion file, it will
+            cause error 
+            #! Comment out the assert class type in abstract.py line 131
+        """
+        try:
+            dof_pos = TensorUtils.from_dict(dict_repr["dof_pos"], *args, **kwargs)
+            dof_vel = TensorUtils.from_dict(dict_repr["dof_vel"], *args, **kwargs)
+            instance.dof_pos = dof_pos
+            instance.dof_vel = dof_vel
+        except:
+            pass
         
         return instance
 

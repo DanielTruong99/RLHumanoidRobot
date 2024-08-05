@@ -1,6 +1,6 @@
 {
-    "source_motion": "data/07_01_cmu.npy",
-    "target_motion_path": "data/07_01_cmu_amp.npy",
+    "source_motion": "data/07_04_cmu.npy",
+    "target_motion_path": "data/07_04_cmu_amp.npy",
     "source_tpose": "data/cmu_tpose.npy",
     "target_tpose": "data/leg_robot_tpose.npy",
     "joint_mapping": {
