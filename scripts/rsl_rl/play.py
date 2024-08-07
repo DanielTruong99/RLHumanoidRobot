@@ -106,11 +106,18 @@ def main():
     #! Create a logger
     data_logger = Logger()
 
+    #! Set eviroment origin 
+    if env.unwrapped.scene.terrain.terrain_types[0] == 0:  #type: ignore
+        terrain = env.unwrapped.scene.terrain
+        terrain.env_origins[:] = terrain.terrain_origins[3, 4] #type: ignore
+
+        env.unwrapped.reset()
+   
     # reset environment 
     obs, _ = env.get_observations()
 
     policy_counter = 0
-    policy_step_dt = env.env.step_dt
+    policy_step_dt = env.unwrapped.step_dt
     stop_state_log_s = 10.0
     # stop_state_log = env.env.max_episode_length
     stop_state_log = int(stop_state_log_s / policy_step_dt)
@@ -134,6 +141,9 @@ def main():
             if policy_counter < stop_state_log:
                 data_frame = {
                     'time_step': policy_counter*policy_step_dt,
+                    'c_x': obs[:, 9].item(),
+                    'c_y': obs[:, 10].item(),
+                    'c_z': obs[:, 11].item(),
                     'base_x': env.env.scene["robot"].data.root_pos_w[0, 0].item(),
                     'base_y': env.env.scene["robot"].data.root_pos_w[0, 1].item(),
                     'base_z': env.env.scene["robot"].data.root_pos_w[0, 2].item(),

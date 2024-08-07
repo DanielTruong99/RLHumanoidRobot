@@ -42,7 +42,7 @@
             "name": "Python: Play Environment",
             "type": "debugpy",
             "request": "launch",
-            "args" : ["--task", "Template-Isaac-Velocity-Flat-Anymal-D-Play-v0", "--num_envs", "32"],
+            "args" : ["--task", "Isaac-Velocity-Rough-Play-LegRobot-v0", "--num_envs", "1"],
             "program": "${workspaceFolder}/scripts/rsl_rl/play.py",
             "console": "integratedTerminal",
             "envFile": "${workspaceFolder}/.vscode/.python.env",

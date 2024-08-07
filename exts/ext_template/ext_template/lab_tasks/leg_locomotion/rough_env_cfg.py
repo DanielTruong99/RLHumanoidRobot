@@ -454,37 +454,45 @@ class LegRobotRoughEnvCfg_PLAY(LegRobotRoughEnvCfg):
         super().__post_init__()
 
 
-        # self.scene.terrain = TerrainImporterCfg(
-        #     prim_path="/World/ground",
-        #     terrain_type="generator",
-        #     terrain_generator=ROUGH_TERRAINS_CFG,
-        #     max_init_terrain_level=5,
-        #     collision_group=-1,
-        #     physics_material=sim_utils.RigidBodyMaterialCfg(
-        #         friction_combine_mode="multiply",
-        #         restitution_combine_mode="multiply",
-        #         static_friction=1.0,
-        #         dynamic_friction=1.0,
-        #     ),
-        #     visual_material=sim_utils.MdlFileCfg(
-        #         mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
-        #         project_uvw=True,
-        #         texture_scale=(0.25, 0.25),
-        #     ),
-        #     debug_vis=False,
-        # )
+        self.scene.terrain = TerrainImporterCfg(
+            prim_path="/World/ground",
+            terrain_type="generator",
+            terrain_generator=ROUGH_TERRAINS_CFG,
+            max_init_terrain_level=5,
+            collision_group=-1,
+            physics_material=sim_utils.RigidBodyMaterialCfg(
+                friction_combine_mode="multiply",
+                restitution_combine_mode="multiply",
+                static_friction=1.0,
+                dynamic_friction=1.0,
+            ),
+            visual_material=sim_utils.MdlFileCfg(
+                mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
+                project_uvw=True,
+                texture_scale=(0.25, 0.25),
+            ),
+            debug_vis=False,
+        )
 
 
         self.scene.num_envs = 1
         self.scene.env_spacing = 2.5
         self.episode_length_s = 20.0
 
-        self.scene.terrain.max_init_terrain_level = None
+        self.scene.terrain.max_init_terrain_level = 1
         # reduce the number of terrains to save memory
         if self.scene.terrain.terrain_generator is not None:
             self.scene.terrain.terrain_generator.num_rows = 5
             self.scene.terrain.terrain_generator.num_cols = 5
-            self.scene.terrain.terrain_generator.curriculum = False
+
+            self.scene.terrain.terrain_generator.curriculum = True
+            self.scene.terrain.num_envs = self.scene.num_envs
+            self.scene.terrain.debug_vis = True
+
+            self.scene.terrain.terrain_generator.sub_terrains["pyramid_stairs"].step_height_range = (0.01, 0.05) #type: ignore
+            self.scene.terrain.terrain_generator.sub_terrains["pyramid_stairs_inv"].step_height_range = (0.01, 0.05) #type: ignore
+            self.scene.terrain.terrain_generator.sub_terrains["boxes"].grid_height_range = (0.01, 0.02) #type: ignore
+            self.scene.terrain.terrain_generator.sub_terrains["random_rough"].noise_range = (0.01, 0.02)
 
         self.commands.base_velocity.ranges.lin_vel_x = (0.0, 0.8)
         self.commands.base_velocity.ranges.lin_vel_y = (0.0, 0.0)
@@ -507,6 +515,6 @@ class LegRobotRoughEnvCfg_PLAY(LegRobotRoughEnvCfg):
             env_index=0,
         )
 
-        # self.sim.render_interval = self.decimation * 3
-        self.scene.contact_forces.debug_vis = True
+        # self.sim.render_interval = self.decimation * 2
+        self.scene.contact_forces.debug_vis = False
  

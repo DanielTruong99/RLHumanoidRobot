@@ -419,7 +419,7 @@ class RewardsCfg:
         func=custom_mdp.pb_base_height_exp, weight=1.0,
         params={
             "asset_cfg": SceneEntityCfg("robot"),
-            "target_height": 0.77,
+            "target_height": 0.76,
             "std": math.sqrt(0.5),
         },
     )
@@ -441,7 +441,7 @@ class TerminationsCfg:
     """Termination terms for the MDP."""
     base_contact = DoneTerm(
         func=mdp.illegal_contact,
-        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*base"), "threshold": 1.0},
+        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=[".*base", ".*_thigh", ".*_calf"]), "threshold": 1.0},
     )
 
     bad_orientation = DoneTerm(
@@ -497,12 +497,6 @@ class LegRobotRoughAMPEnvCfg(LocomotionVelocityRoughEnvCfg):
         # simulation settings
         self.sim.dt = 0.001
         self.sim.render_interval = self.decimation
-        self.sim.physx.solver_type = 1
-        self.sim.physx.max_position_iteration_count = 4
-        self.sim.physx.max_velocity_iteration_count = 0
-        self.sim.physx.bounce_threshold_velocity = 0.5
-        self.sim.physx.gpu_max_rigid_contact_count = 2**23
-        self.sim.physx.gpu_temp_buffer_capacity = 5
 
         # Scene
         self.scene.robot = LEG10_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot") # type: ignore

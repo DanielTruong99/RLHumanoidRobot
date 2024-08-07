@@ -43,6 +43,7 @@ for frame in range(num_frames):
     rightfoot_pos = leg_robot_motion.global_translation[frame, rightfoot_index, ...]
     rightfoot_rot = leg_robot_motion.global_rotation[frame, rightfoot_index, ...]
     
+    #! Just for sfu motion capture
     adjust_quat = quat_from_angle_axis(torch.tensor(torch.pi), torch.tensor([0.0, 0.0, 1.0]))
     pelvis_pos = quat_rotate(adjust_quat, pelvis_pos)
     rightfoot_pos = quat_rotate(adjust_quat, rightfoot_pos)

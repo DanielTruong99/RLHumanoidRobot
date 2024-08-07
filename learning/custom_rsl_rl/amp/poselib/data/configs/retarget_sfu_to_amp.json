@@ -21,8 +21,8 @@
          "RightHand": "right_hand"
     },
     "rotation": [0.5, 0.5, 0.5, 0.5],
-    "scale": 0.009,
+    "scale": 0.007,
     "root_height_offset": 0.035,
     "trim_frame_beg": 0,
-    "trim_frame_end": 50
+    "trim_frame_end": 80
 }

@@ -20,9 +20,9 @@ df = pd.read_csv(file_name)
 def plot_base_velocity():
     fig, axs = plt.subplots(3, 1, figsize=(10, 8))
 
-    df.plot(x='time_step', y='base_vx', ax=axs[0], legend=False)
-    df.plot(x='time_step', y='base_vy', ax=axs[1], legend=False)
-    df.plot(x='time_step', y='base_wz', ax=axs[2], legend=False)
+    df.plot(x='time_step', y=['base_vx', 'c_x'], ax=axs[0], legend=False)
+    df.plot(x='time_step', y=['base_vy', 'c_y'], ax=axs[1], legend=False)
+    df.plot(x='time_step', y=['base_wz', 'c_z'], ax=axs[2], legend=False)
 
     # axs[0].hlines(y=1, xmin=0, xmax=10, colors='r', linestyles='--', label='command vx')
     axs[0].set_xlabel('Time (s)')
@@ -52,7 +52,9 @@ def plot_dof_torque():
     axs = axs.flatten()
     for index, key in enumerate(DOF_NAMES):
         column_name = 'torque_' + key
-        df.plot(x='time_step', y=column_name, ax=axs[index], legend=False, linewidth=0.9)
+        df[f'max_{column_name}'] = df[column_name].max()
+        df[f'min_{column_name}'] = df[column_name].min()
+        df.plot(x='time_step', y=[column_name, f'max_{column_name}', f'min_{column_name}'], ax=axs[index], legend=False, linewidth=1.1)
         axs[index].set_xlabel('Time (s)')
         axs[index].set_ylabel(column_name)
         axs[index].grid(True)
