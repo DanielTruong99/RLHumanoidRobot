@@ -81,11 +81,33 @@ class EventCfg:
     )
 
     reset_robot_joints = EventTerm(
-        func=mdp.reset_joints_by_offset,
+        func=custom_mdp.reset_joints_by_offset,
         mode="reset",
         params={
-            "position_range": (-0.3, 0.3),
-            "velocity_range": (-0.1, 0.1),
+            "position_range": {
+                'R_hip_joint': (-0.1, 0.1),
+                'R_hip2_joint': (-0.2, 0.2),
+                'R_thigh_joint': (-0.2, 0.2),
+                'R_calf_joint': (0.0, 0.2),
+                'R_toe_joint': (-0.3, 0.3),
+                'L_hip_joint': (-0.1, 0.1),
+                'L_hip2_joint': (-0.2, 0.2),
+                'L_thigh_joint': (-0.2, 0.2),
+                'L_calf_joint': (0.0, 0.2),
+                'L_toe_joint': (-0.3, 0.3),
+            },
+            "velocity_range": {
+                'R_hip_joint': (-0.1, 0.1),
+                'R_hip2_joint': (-0.1, 0.1),
+                'R_thigh_joint': (-0.1, 0.1),
+                'R_calf_joint': (-0.1, 0.1),
+                'R_toe_joint': (-0.1, 0.1),
+                'L_hip_joint': (-0.1, 0.1),
+                'L_hip2_joint': (-0.1, 0.1),
+                'L_thigh_joint': (-0.1, 0.1),
+                'L_calf_joint': (-0.1, 0.1),
+                'L_toe_joint': (-0.1, 0.1),
+            }
         },
     )
 
@@ -385,22 +407,22 @@ class RewardsCfg:
         joint_regularization: 1.0
         #! For AMP, temporarly disabled orientation and height
     """
-    # pb_orientation = RewTerm(
-    #     func=custom_mdp.pb_flat_orientation_exp, weight=1.0,
-    #     params={
-    #         "asset_cfg": SceneEntityCfg("robot"),
-    #         "std": math.sqrt(0.5),
-    #     },
-    # )
+    pb_orientation = RewTerm(
+        func=custom_mdp.pb_flat_orientation_exp, weight=1.0,
+        params={
+            "asset_cfg": SceneEntityCfg("robot"),
+            "std": math.sqrt(0.5),
+        },
+    )
 
-    # pb_base_height = RewTerm(
-    #     func=custom_mdp.pb_base_height_exp, weight=1.0,
-    #     params={
-    #         "asset_cfg": SceneEntityCfg("robot"),
-    #         "target_height": 0.77,
-    #         "std": math.sqrt(0.5),
-    #     },
-    # )
+    pb_base_height = RewTerm(
+        func=custom_mdp.pb_base_height_exp, weight=1.0,
+        params={
+            "asset_cfg": SceneEntityCfg("robot"),
+            "target_height": 0.77,
+            "std": math.sqrt(0.5),
+        },
+    )
 
     pb_joint_regularization = RewTerm(
         func=custom_mdp.pb_joint_regulization_exp, weight=1.0,
@@ -469,12 +491,18 @@ class LegRobotRoughAMPEnvCfg(LocomotionVelocityRoughEnvCfg):
         super().__post_init__()
 
         # general settings
-        self.decimation = 4
+        self.decimation = 10
         self.episode_length_s = 5.0
 
         # simulation settings
-        self.sim.dt = 0.005
+        self.sim.dt = 0.001
         self.sim.render_interval = self.decimation
+        self.sim.physx.solver_type = 1
+        self.sim.physx.max_position_iteration_count = 4
+        self.sim.physx.max_velocity_iteration_count = 0
+        self.sim.physx.bounce_threshold_velocity = 0.5
+        self.sim.physx.gpu_max_rigid_contact_count = 2**23
+        self.sim.physx.gpu_temp_buffer_capacity = 5
 
         # Scene
         self.scene.robot = LEG10_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot") # type: ignore
@@ -541,6 +569,7 @@ class LegRobotRoughAMPEnvCfg_PLAY(LegRobotRoughAMPEnvCfg):
 
         # disable randomization for play
         self.observations.policy.enable_corruption = False
+        self.observations.amp.enable_corruption = False
         # remove random pushing
         self.events.base_external_force_torque = None # type: ignore
         self.events.push_robot = None # type: ignore

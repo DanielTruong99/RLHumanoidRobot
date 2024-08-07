@@ -1,8 +1,8 @@
 {
-    "source_motion": "data/0005_Jogging001.npy",
-    "target_motion_path": "data/0005_Jogging001_amp.npy",
+    "source_motion": "data/0005_Walking001.npy",
+    "target_motion_path": "data/0005_Walking001_amp.npy",
     "source_tpose": "data/sfu_tpose.npy",
-    "target_tpose": "data/amp_humanoid_tpose.npy",
+    "target_tpose": "data/leg_robot_tpose.npy",
     "joint_mapping": {
          "Hips": "pelvis",
          "LeftUpLeg": "left_thigh",
@@ -21,8 +21,8 @@
          "RightHand": "right_hand"
     },
     "rotation": [0.5, 0.5, 0.5, 0.5],
-    "scale": 0.01,
-    "root_height_offset": 0.0,
+    "scale": 0.009,
+    "root_height_offset": 0.035,
     "trim_frame_beg": 0,
-    "trim_frame_end": 100
+    "trim_frame_end": 50
 }

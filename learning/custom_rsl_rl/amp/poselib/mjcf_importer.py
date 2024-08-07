@@ -29,12 +29,19 @@
 
 from poselib.skeleton.skeleton3d import SkeletonTree, SkeletonState
 from poselib.visualization.common import plot_skeleton_state
+from poselib.core.rotation3d import *
 
 # load in XML mjcf file and save zero rotation pose in npy format
 xml_path = "../../../../assets/mjcf/nv_humanoid.xml"
 skeleton = SkeletonTree.from_mjcf(xml_path)
 zero_pose = SkeletonState.zero_pose(skeleton)
-zero_pose.to_file("data/nv_humanoid.npy")
+rotated_pose = zero_pose.from_rotation_and_root_translation(
+            zero_pose,
+            r=torch.tensor([0.70710678118, 0.70710678118, 0, 0]),
+            t=torch.zeros(3),
+            is_local=True,
+        )
+# zero_pose.to_file("data/nv_humanoid.npy")
 
 # visualize zero rotation pose
 plot_skeleton_state(zero_pose)

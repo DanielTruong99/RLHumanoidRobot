@@ -26,7 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from omni.isaac.lab.utils.math import quat_mul, quat_from_angle_axis
+from poselib.core.rotation3d import * 
 import torch
 import json
 import numpy as np
@@ -205,12 +205,13 @@ def project_joints(motion):
 
 def main():
     # load retarget config
-    retarget_data_path = "data/configs/retarget_cmu_to_amp.json"
+    retarget_data_path = "data/configs/retarget_sfu_to_amp.json"
     with open(retarget_data_path) as f:
         retarget_data = json.load(f)
 
     # load and visualize t-pose files
     source_tpose = SkeletonState.from_file(retarget_data["source_tpose"])
+
     if VISUALIZE:
         plot_skeleton_state(source_tpose)
 

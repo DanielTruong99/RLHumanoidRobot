@@ -17,8 +17,8 @@ MOTION_FILES = glob.glob('learning/custom_rsl_rl/datasets/mocap_motions/*')
 
 @configclass
 class LegRobotRoughAMPPPORunnerCfg(RslRlOnPolicyRunnerCfg):
-    num_steps_per_env = 28
-    max_iterations = 30000
+    num_steps_per_env = 24
+    max_iterations = 10000
     save_interval = 50
     experiment_name = "leg_robot_rough_amp"
     empirical_normalization = False
@@ -47,7 +47,7 @@ class LegRobotRoughAMPPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     amp_reward_coef = 2.0
     amp_motion_files = MOTION_FILES
     amp_num_preload_transitions = 2000000
-    amp_task_reward_lerp = 0.75
+    amp_task_reward_lerp = 0.65
     amp_discr_hidden_dims = [1024, 512]
 
     min_normalized_std = [1.0] * 10

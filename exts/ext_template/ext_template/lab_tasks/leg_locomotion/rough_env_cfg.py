@@ -79,11 +79,33 @@ class EventCfg:
     )
 
     reset_robot_joints = EventTerm(
-        func=mdp.reset_joints_by_offset,
+        func=custom_mdp.reset_joints_by_offset,
         mode="reset",
         params={
-            "position_range": (-0.3, 0.3),
-            "velocity_range": (-0.1, 0.1),
+            "position_range": {
+                'R_hip_joint': (-0.1, 0.1),
+                'R_hip2_joint': (-0.2, 0.2),
+                'R_thigh_joint': (-0.2, 0.2),
+                'R_calf_joint': (0.0, 0.2),
+                'R_toe_joint': (-0.3, 0.3),
+                'L_hip_joint': (-0.1, 0.1),
+                'L_hip2_joint': (-0.2, 0.2),
+                'L_thigh_joint': (-0.2, 0.2),
+                'L_calf_joint': (0.0, 0.2),
+                'L_toe_joint': (-0.3, 0.3),
+            },
+            "velocity_range": {
+                'R_hip_joint': (-0.1, 0.1),
+                'R_hip2_joint': (-0.1, 0.1),
+                'R_thigh_joint': (-0.1, 0.1),
+                'R_calf_joint': (-0.1, 0.1),
+                'R_toe_joint': (-0.1, 0.1),
+                'L_hip_joint': (-0.1, 0.1),
+                'L_hip2_joint': (-0.1, 0.1),
+                'L_thigh_joint': (-0.1, 0.1),
+                'L_calf_joint': (-0.1, 0.1),
+                'L_toe_joint': (-0.1, 0.1),
+            }
         },
     )
 
@@ -328,7 +350,7 @@ class RewardsCfg:
         func=custom_mdp.pb_base_height_exp, weight=1.0,
         params={
             "asset_cfg": SceneEntityCfg("robot"),
-            "target_height": 0.77,
+            "target_height": 0.76,
             "std": math.sqrt(0.5),
         },
     )
@@ -350,7 +372,7 @@ class TerminationsCfg:
     """Termination terms for the MDP."""
     base_contact = DoneTerm(
         func=mdp.illegal_contact,
-        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*base"), "threshold": 1.0},
+        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=[".*base", ".*_thigh", ".*_calf"]), "threshold": 1.0},
     )
 
     bad_orientation = DoneTerm(
@@ -399,11 +421,11 @@ class LegRobotRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
         super().__post_init__()
 
         # general settings
-        self.decimation = 4
+        self.decimation = 10
         self.episode_length_s = 5.0
 
         # simulation settings
-        self.sim.dt = 0.005
+        self.sim.dt = 0.001
         self.sim.render_interval = self.decimation
 
         # Scene

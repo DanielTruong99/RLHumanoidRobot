@@ -32,12 +32,12 @@ def joint_regulization_exp(env: ManagerBasedRLEnv, std: float, asset_cfg: SceneE
     asset: Articulation = env.scene[asset_cfg.name]
     joint_pos = asset.data.joint_pos
 
-    R_hip_joint_index = asset.joint_names.index("R_hip_joint")
-    R_hip2_joint_index = asset.joint_names.index("R_hip2_joint")
-    R_thigh_joint_index = asset.joint_names.index("R_thigh_joint")
-    L_hip_joint_index = asset.joint_names.index("L_hip_joint")
-    L_hip2_joint_index = asset.joint_names.index("L_hip2_joint")
-    L_thigh_joint_index = asset.joint_names.index("L_thigh_joint")
+    R_hip_joint_index = asset.find_joints("R_hip_joint")[0][0]
+    R_hip2_joint_index = asset.find_joints("R_hip2_joint")[0][0]
+    R_thigh_joint_index = asset.find_joints("R_thigh_joint")[0][0]
+    L_hip_joint_index = asset.find_joints("L_hip_joint")[0][0]
+    L_hip2_joint_index = asset.find_joints("L_hip2_joint")[0][0]
+    L_thigh_joint_index = asset.find_joints("L_thigh_joint")[0][0]
 
     error_R_yaw = torch.square(joint_pos[:, R_hip_joint_index])
     error_L_yaw = torch.square(joint_pos[:, L_hip_joint_index])

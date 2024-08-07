@@ -33,7 +33,8 @@ def foot_positions_in_base_frame(
     # extract the used quantities (to enable type-hinting)
     asset: Articulation = env.scene[asset_cfg.name] # type: ignore
     root_postion = asset.data.root_pos_w
-    right_foot_pos = asset.data.body_pos_w[:, 5, :]; left_foot_pos = asset.data.body_pos_w[:, 10, :]
+    right_foot_pos = asset.data.body_pos_w[:, asset.find_bodies("R_toe")[0][0], :] 
+    left_foot_pos = asset.data.body_pos_w[:, asset.find_bodies("L_toe")[0][0], :]
     right_foot_pos_from_base = right_foot_pos - root_postion; left_foot_pos_from_base = left_foot_pos - root_postion
 
     base_frame_right_foot_pos_from_base = math.quat_rotate_inverse(asset.data.root_quat_w, right_foot_pos_from_base)

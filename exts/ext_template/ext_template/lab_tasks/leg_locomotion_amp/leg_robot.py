@@ -86,11 +86,11 @@ class LegRobotEnv(ManagerBasedRLEnv):
         #! Trainning with AMP no need pb_orientation pb_base_height
         # * Cache the reward for potential-based 
         # self.reward_manager.get_term_cfg("pb_flat_orientation_exp)")
-        # pb_flat_cfg = self.reward_manager.get_term_cfg("pb_orientation").params
-        # pb_base_cfg = self.reward_manager.get_term_cfg("pb_base_height").params
+        pb_flat_cfg = self.reward_manager.get_term_cfg("pb_orientation").params
+        pb_base_cfg = self.reward_manager.get_term_cfg("pb_base_height").params
         pb_joint_regulization_cfg = self.reward_manager.get_term_cfg("pb_joint_regularization").params
-        # self.rwd_oriPrev = custom_mdp.flat_orientation_exp(env=self, **pb_flat_cfg) #type: ignore
-        # self.rwd_baseHeightPrev = custom_mdp.base_height_exp(env=self, **pb_base_cfg) #type: ignore
+        self.rwd_oriPrev = custom_mdp.flat_orientation_exp(env=self, **pb_flat_cfg) #type: ignore
+        self.rwd_baseHeightPrev = custom_mdp.base_height_exp(env=self, **pb_base_cfg) #type: ignore
         self.rwd_jointRegPrev = custom_mdp.joint_regulization_exp(env=self, **pb_joint_regulization_cfg) #type: ignore
 
         # perform physics stepping

@@ -23,7 +23,7 @@ urdf_file_path = os.path.join(assets_path, "leg10/leg10.urdf")
 leg_robot = pybullet.loadURDF(urdf_file_path, [0, 0, 0.0], [0, 0, 0, 1])
 
 '''Motion capture setup'''
-leg_robot_motion = CustomSkeletonMotion.from_file("data/07_04_cmu_amp.npy")
+leg_robot_motion = CustomSkeletonMotion.from_file("data/0005_Walking001_amp.npy")
 pelvis_index = leg_robot_motion.skeleton_tree._node_indices['pelvis']
 leftfoot_index = leg_robot_motion.skeleton_tree._node_indices['left_foot']
 rightfoot_index = leg_robot_motion.skeleton_tree._node_indices['right_foot']
@@ -31,8 +31,8 @@ rightfoot_index = leg_robot_motion.skeleton_tree._node_indices['right_foot']
 
 '''Simulation loop'''
 num_frames = leg_robot_motion.root_translation.shape[0]
-# time_step = 1.0/leg_robot_motion.fps
-time_step = 1.0/60
+time_step = 1.0/leg_robot_motion.fps
+# time_step = 1.0/60
 dof_pose = np.zeros([num_frames, pybullet.getNumJoints(leg_robot)], dtype=np.float64)
 for frame in range(num_frames):
     #* get kinematic information from the motion
@@ -43,6 +43,14 @@ for frame in range(num_frames):
     rightfoot_pos = leg_robot_motion.global_translation[frame, rightfoot_index, ...]
     rightfoot_rot = leg_robot_motion.global_rotation[frame, rightfoot_index, ...]
     
+    adjust_quat = quat_from_angle_axis(torch.tensor(torch.pi), torch.tensor([0.0, 0.0, 1.0]))
+    pelvis_pos = quat_rotate(adjust_quat, pelvis_pos)
+    rightfoot_pos = quat_rotate(adjust_quat, rightfoot_pos)
+    leftfoot_pos = quat_rotate(adjust_quat, leftfoot_pos)
+    pelvis_rot = quat_mul(pelvis_rot, adjust_quat)
+    leftfoot_rot = quat_mul(leftfoot_rot, adjust_quat)
+    rightfoot_rot = quat_mul(rightfoot_rot, adjust_quat)
+
     #* solve inverse kinematics for the left foot and right foot
     joint_damping_list = [0.1] * pybullet.getNumJoints(leg_robot) 
     joint_lim_low = []; joint_lim_high = []
@@ -104,7 +112,7 @@ for frame in range(num_frames):
     time.sleep(time_step)
 
 leg_robot_motion.set_dof_state(dof_pose)
-leg_robot_motion.to_file("data/retargeted_slow_waking_motion.npy")
+leg_robot_motion.to_file("data/retargeted_slow_waking_motion2.npy")
 
 '''End simulation'''
 pybullet.disconnect()
