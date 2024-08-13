@@ -13,6 +13,8 @@ from omni.isaac.lab.utils.noise import AdditiveUniformNoiseCfg as Unoise
 from omni.isaac.lab.utils import configclass
 
 from omni.isaac.lab.terrains import TerrainImporterCfg
+import omni.isaac.lab.terrains as terrain_gen
+from omni.isaac.lab.terrains.terrain_generator_cfg import TerrainGeneratorCfg
 from omni.isaac.lab.terrains.config.rough import ROUGH_TERRAINS_CFG
 import omni.isaac.lab.sim as sim_utils
 from omni.isaac.lab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR
@@ -20,7 +22,7 @@ from omni.isaac.lab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR
 import omni.isaac.lab_tasks.manager_based.locomotion.velocity.mdp as mdp
 from omni.isaac.lab_tasks.manager_based.locomotion.velocity.velocity_env_cfg import (
     LocomotionVelocityRoughEnvCfg,
-    RewardsCfg,
+    RewardsCfg, # type: ignore
 )
 from omni.isaac.lab.envs.common import ViewerCfg
 
@@ -30,6 +32,8 @@ from . import mdp as custom_mdp
 # Pre-defined configs
 ##
 from ...lab_assets import LEG10_CFG
+
+from . import terrain
 
 
 @configclass
@@ -406,7 +410,7 @@ class TerminationsCfg:
 
 
 @configclass
-class LegRobotRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
+class LegRobotParkourEnvCfg(LocomotionVelocityRoughEnvCfg):
     
     commands: CommandsCfg = CommandsCfg()
     events: EventCfg = EventCfg()
@@ -431,8 +435,56 @@ class LegRobotRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
         # Scene
         self.scene.robot = LEG10_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot") # type: ignore
         self.scene.height_scanner.prim_path = "{ENV_REGEX_NS}/Robot/base"
-        self.scene.terrain.terrain_type = "plane"
-        self.scene.terrain.terrain_generator = None
+        
+        # TODO: Define the terrain
+        PARKOUR_TERRAINS_CFG = TerrainGeneratorCfg(
+            size=(10.0, 10.0),
+            border_width=20.0,
+            num_rows=10,
+            num_cols=1,
+            horizontal_scale=0.1,
+            vertical_scale=0.005,
+            slope_threshold=0.75,
+            use_cache=False,
+            sub_terrains={
+            #     "random_rough": terrain_gen.HfRandomUniformTerrainCfg(
+            #         proportion=0.2, noise_range=(0.02, 0.03), noise_step=0.02, border_width=0.0
+            #     ),
+            #    "hurdle_with_rough": terrain_gen.trimesh.mesh_terrains_cfg.MeshBoxTerrainCfg(
+            #         box_height_range=(0.05, 0.5), platform_width=0.1
+            #     ),
+                "hurdle_noise": terrain.HurdleNoiseTerrainCfg(
+                    box_height_range=(0.05, 0.5), platform_width=(0.1, 5.0), box_position=(1.0, 0.0),
+                    random_uniform_terrain_cfg=terrain_gen.HfRandomUniformTerrainCfg(
+                        proportion=0.2, noise_range=(0.00, 0.03), noise_step=0.01, border_width=0.0,
+                        size=(10.0, 10.0),
+                    )
+                )
+            }, #type: ignore
+            curriculum=True
+        )
+
+        self.scene.terrain = TerrainImporterCfg(
+            prim_path="/World/ground",
+            terrain_type="generator",
+            terrain_generator=PARKOUR_TERRAINS_CFG,
+            max_init_terrain_level=5,
+            collision_group=-1,
+            physics_material=sim_utils.RigidBodyMaterialCfg(
+                friction_combine_mode="multiply",
+                restitution_combine_mode="multiply",
+                static_friction=1.0,
+                dynamic_friction=1.0,
+            ),
+            visual_material=sim_utils.MdlFileCfg(
+                mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
+                project_uvw=True,
+                texture_scale=(0.25, 0.25),
+            ),
+            debug_vis=False,
+        )
+        # self.scene.terrain.terrain_type = "plane"
+        # self.scene.terrain.terrain_generator = None
 
 
         #! Just for debug purposes
@@ -448,7 +500,7 @@ class LegRobotRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
 
 
 @configclass
-class LegRobotRoughEnvCfg_PLAY(LegRobotRoughEnvCfg):
+class LegRobotParkourEnvCfg_PLAY(LegRobotParkourEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
@@ -492,7 +544,7 @@ class LegRobotRoughEnvCfg_PLAY(LegRobotRoughEnvCfg):
             self.scene.terrain.terrain_generator.sub_terrains["pyramid_stairs"].step_height_range = (0.01, 0.05) #type: ignore
             self.scene.terrain.terrain_generator.sub_terrains["pyramid_stairs_inv"].step_height_range = (0.01, 0.05) #type: ignore
             self.scene.terrain.terrain_generator.sub_terrains["boxes"].grid_height_range = (0.01, 0.02) #type: ignore
-            self.scene.terrain.terrain_generator.sub_terrains["random_rough"].noise_range = (0.01, 0.02)
+            self.scene.terrain.terrain_generator.sub_terrains["random_rough"].noise_range = (0.01, 0.02) #type: ignore
 
         self.commands.base_velocity.ranges.lin_vel_x = (0.0, 0.8)
         self.commands.base_velocity.ranges.lin_vel_y = (0.0, 0.0)
