@@ -11,7 +11,7 @@ from omni.isaac.lab.sensors import ContactSensor
 
 if TYPE_CHECKING:
     from omni.isaac.lab.envs import ManagerBasedRLEnv
-    from ..leg_robot import LegRobotEnv
+    from ...leg_locomotion_parkour.leg_robot import LegRobotEnv
 
 def action_rate_1st_order(env: LegRobotEnv) -> torch.Tensor:
     qk = env.action_manager.action

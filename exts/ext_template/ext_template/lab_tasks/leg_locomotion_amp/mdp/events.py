@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from omni.isaac.lab.envs import ManagerBasedRLEnv
     from omni.isaac.lab.envs import ManagerBasedEnv
     from omni.isaac.lab.managers.command_manager import CommandTerm
-    from ..leg_robot import LegRobotEnv
+    from ...leg_locomotion_parkour.leg_robot import LegRobotEnv
 
 def reset_phase(
     env: LegRobotEnv,

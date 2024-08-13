@@ -6,10 +6,8 @@ from typing import TYPE_CHECKING
 from omni.isaac.lab.envs import ManagerBasedEnv
 from omni.isaac.lab.envs.manager_based_rl_env_cfg import ManagerBasedRLEnvCfg
 from omni.isaac.lab.envs.common import VecEnvStepReturn
-from ..leg_locomotion_amp import mdp as custom_mdp
+from . import mdp as custom_mdp
 from omni.isaac.lab.managers.reward_manager import RewardTermCfg
-
-from learning.custom_rsl_rl.datasets.motion_loader import AMPLoader
 
 class CustomActionManager(ActionManager):
     def __init__(self, cfg: object, env: ManagerBasedEnv):
@@ -40,12 +38,6 @@ class LegRobotEnv(ManagerBasedRLEnv):
         )
         self.phase_freq = 1.0
         self.eps = 0.2        
-
-        # self._motion_lib = AMPLoader(
-        #     motion_files=self.cfg.motion_files, #type: ignore
-        #     device=self.device, 
-        #     time_between_frames=self.step_dt
-        # )        
         
         super().__init__(cfg, render_mode, **kwargs)
 
@@ -82,8 +74,7 @@ class LegRobotEnv(ManagerBasedRLEnv):
         # note: checked here once to avoid multiple checks within the loop
         is_rendering = self.sim.has_gui() or self.sim.has_rtx_sensors()
 
-        #! Custom pre physic step callback
-        #! Trainning with AMP no need pb_orientation pb_base_height
+        # ! Custom pre physic step callback
         # * Cache the reward for potential-based 
         # self.reward_manager.get_term_cfg("pb_flat_orientation_exp)")
         pb_flat_cfg = self.reward_manager.get_term_cfg("pb_orientation").params
@@ -123,13 +114,11 @@ class LegRobotEnv(ManagerBasedRLEnv):
         self.reset_buf = self.termination_manager.compute()
         self.reset_terminated = self.termination_manager.terminated
         self.reset_time_outs = self.termination_manager.time_outs
-
         # -- reward computation
         self.reward_buf = self.reward_manager.compute(dt=self.step_dt)
 
         # -- reset envs that terminated/timed-out and log the episode information
         reset_env_ids = self.reset_buf.nonzero(as_tuple=False).squeeze(-1)
-
         if len(reset_env_ids) > 0:
             self._reset_idx(reset_env_ids) #type: ignore
         # -- update command
