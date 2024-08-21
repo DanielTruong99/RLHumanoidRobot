@@ -185,13 +185,13 @@ class ObservationsCfg:
         actions = ObsTerm(func=mdp.last_action)
 
         #! Temporaly disabled height_scan, instead use base height
-        # height_scan = ObsTerm(
-        #     func=mdp.height_scan,
-        #     params={"sensor_cfg": SceneEntityCfg("height_scanner")},
-        #     noise=Unoise(n_min=-0.1, n_max=0.1),
-        #     clip=(-100.0, 100.0),
-        #     scale=1./0.6565
-        # )
+        height_scan = ObsTerm(
+            func=mdp.height_scan,
+            params={"sensor_cfg": SceneEntityCfg("height_scanner")},
+            noise=Unoise(n_min=-0.1, n_max=0.1),
+            clip=(-100.0, 100.0),
+            scale=1./0.6565
+        )
         base_height = ObsTerm(
             func=mdp.base_pos_z,
             params={
@@ -454,7 +454,7 @@ class LegRobotParkourEnvCfg(LocomotionVelocityRoughEnvCfg):
             #         box_height_range=(0.05, 0.5), platform_width=0.1
             #     ),
                 "hurdle_noise": terrain.HurdleNoiseTerrainCfg(
-                    box_height_range=(0.05, 0.5), platform_width=(0.1, 5.0), box_position=(1.0, 0.0),
+                    box_height_range=(0.05, 0.5), platform_width=(0.1, 10.0), box_position=(1.0, 0.0),
                     random_uniform_terrain_cfg=terrain_gen.HfRandomUniformTerrainCfg(
                         proportion=0.2, noise_range=(0.00, 0.03), noise_step=0.01, border_width=0.0,
                         size=(10.0, 10.0),
@@ -483,13 +483,19 @@ class LegRobotParkourEnvCfg(LocomotionVelocityRoughEnvCfg):
             ),
             debug_vis=False,
         )
+
+        self.scene.env_spacing = 0.0
+
+        # TODO: Customize heigh scanner
+        from omni.isaac.lab.sensors.ray_caster.patterns.patterns_cfg import GridPatternCfg
+        self.scene.height_scanner.debug_vis = True
+        self.scene.height_scanner.pattern_cfg = GridPatternCfg(resolution=0.1, size=(1.6, 1.0))
         # self.scene.terrain.terrain_type = "plane"
         # self.scene.terrain.terrain_generator = None
 
 
         #! Just for debug purposes
         #! Should be commented out when actually trainning
-        # self.scene.height_scanner.debug_vis = True
         # self.viewer = ViewerCfg(
         #     eye=(3, 3, 3),
         #     origin_type='asset_root',
