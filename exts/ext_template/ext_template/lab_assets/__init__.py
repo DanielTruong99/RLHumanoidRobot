@@ -19,6 +19,7 @@ LOCAL_ASSETS_DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 ##
 
 from .leg_robot import *
+from .leg_parkour import *
 # from .allegro import *
 # from .ant import *
 # from .anymal import *
