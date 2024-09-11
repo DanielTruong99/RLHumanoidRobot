@@ -88,3 +88,26 @@ def pb_flat_orientation_exp(env: LegRobotEnv, std: float,
     return delta_phi / env.step_dt
 
 
+def energy_consumption(
+    env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    """
+    Calculate the power consumption of the motor.
+    Parameters:
+        env (ManagerBasedRLEnv): The environment object.
+        asset_cfg (SceneEntityCfg, optional): The configuration of the scene entity. Defaults to SceneEntityCfg("robot").
+    Returns:
+        torch.Tensor: The power consumption of the motor.
+    """
+
+    # extract the used quantities (to enable type-hinting)
+    asset: Articulation = env.scene[asset_cfg.name]
+
+    # TODO: get joint velocities from the asset
+    joint_vels = asset.data.joint_vel[:, asset_cfg.joint_ids]
+
+    # TODO: get joint torques applied by the actuators
+    joint_torques = asset.data.applied_torque[:, asset_cfg.joint_ids]
+
+    # TODO: calculate joint energy consumption
+    return torch.sum(torch.square(joint_torques) * torch.square(joint_vels), dim=1)

@@ -40,20 +40,21 @@ from . import terrain
 class CurriculumCfg:
     """Curriculum terms for the MDP."""
     pass
+
 @configclass
 class CommandsCfg:
     """Command specifications for the MDP."""
 
     base_velocity = mdp.UniformVelocityCommandCfg(
         asset_name="robot",
-        resampling_time_range=(5.0, 5.0),
+        resampling_time_range=(10.0, 10.0),
         rel_standing_envs=0.02,
         rel_heading_envs=1.0,
-        heading_command=True,
-        heading_control_stiffness=0.0,
+        heading_command=False,
+        heading_control_stiffness=0.5,
         debug_vis=False,
         ranges=mdp.UniformVelocityCommandCfg.Ranges(
-            lin_vel_x=(0.0, 0.8), lin_vel_y=(-0.75, 0.75), ang_vel_z=(-0.3, 0.3), heading=(-0.0, 0.0)
+            lin_vel_x=(0.0, 0.8), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.5, 0.5), heading=(-0.0, 0.0)
         ),
     )
 
@@ -64,9 +65,8 @@ class EventCfg:
         mode="reset",
         params={
             "pose_range": {
-                "x": (0.0, 0.0), 
-                "y": (0.0, 0.0),  
-                "z": (0.0, 0.0),
+                "x": (-0.5, 0.5), 
+                "y": (-0.5, 0.5),  
                 "roll": (-math.pi/10, math.pi/10),
                 "pitch": (-math.pi/10, math.pi/10),
                 "yaw": (-math.pi/10, math.pi/10)
@@ -192,15 +192,15 @@ class ObservationsCfg:
             clip=(-100.0, 100.0),
             scale=1./0.6565
         )
-        base_height = ObsTerm(
-            func=mdp.base_pos_z,
-            params={
-                "asset_cfg": SceneEntityCfg("robot"),
-            },
-            noise=Unoise(n_min=-0.1, n_max=0.1),
-            clip=(-100.0, 100.0),
-            scale=1./0.6565
-        )
+        # base_height = ObsTerm(
+        #     func=mdp.base_pos_z,
+        #     params={
+        #         "asset_cfg": SceneEntityCfg("robot"),
+        #     },
+        #     noise=Unoise(n_min=-0.1, n_max=0.1),
+        #     clip=(-100.0, 100.0),
+        #     scale=1./0.6565
+        # )
 
         # TODO: Add the binary contact force at the foot
         binary_foot_contact_state = ObsTerm(
@@ -354,7 +354,7 @@ class RewardsCfg:
         func=custom_mdp.pb_base_height_exp, weight=1.0,
         params={
             "asset_cfg": SceneEntityCfg("robot"),
-            "target_height": 0.76,
+            "target_height": 0.78,
             "std": math.sqrt(0.5),
         },
     )
@@ -376,7 +376,7 @@ class TerminationsCfg:
     """Termination terms for the MDP."""
     base_contact = DoneTerm(
         func=mdp.illegal_contact,
-        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=[".*base", ".*_thigh", ".*_calf"]), "threshold": 1.0},
+        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=[".*base"]), "threshold": 1.0},
     )
 
     bad_orientation = DoneTerm(
@@ -438,30 +438,30 @@ class LegRobotParkourEnvCfg(LocomotionVelocityRoughEnvCfg):
         
         # TODO: Define the terrain
         PARKOUR_TERRAINS_CFG = TerrainGeneratorCfg(
-            size=(10.0, 10.0),
+            size=(20.0, 20.0),
             border_width=20.0,
-            num_rows=10,
-            num_cols=1,
+            num_rows=5,
+            num_cols=5,
             horizontal_scale=0.1,
             vertical_scale=0.005,
             slope_threshold=0.75,
             use_cache=False,
             sub_terrains={
-            #     "random_rough": terrain_gen.HfRandomUniformTerrainCfg(
-            #         proportion=0.2, noise_range=(0.02, 0.03), noise_step=0.02, border_width=0.0
-            #     ),
+                "random_rough": terrain_gen.HfRandomUniformTerrainCfg(
+                    proportion=0.2, noise_range=(0.00, 0.02), noise_step=0.02, border_width=0.0
+                ),
             #    "hurdle_with_rough": terrain_gen.trimesh.mesh_terrains_cfg.MeshBoxTerrainCfg(
             #         box_height_range=(0.05, 0.5), platform_width=0.1
             #     ),
-                "hurdle_noise": terrain.HurdleNoiseTerrainCfg(
-                    box_height_range=(0.05, 0.5), platform_width=(0.1, 10.0), box_position=(1.0, 0.0),
-                    random_uniform_terrain_cfg=terrain_gen.HfRandomUniformTerrainCfg(
-                        proportion=0.2, noise_range=(0.00, 0.03), noise_step=0.01, border_width=0.0,
-                        size=(10.0, 10.0),
-                    )
-                )
+                # "hurdle_noise": terrain.HurdleNoiseTerrainCfg(
+                #     box_height_range=(0.05, 0.5), platform_width=(0.1, 10.0), box_position=(1.0, 0.0),
+                #     random_uniform_terrain_cfg=terrain_gen.HfRandomUniformTerrainCfg(
+                #         proportion=0.2, noise_range=(0.00, 0.03), noise_step=0.01, border_width=0.0,
+                #         size=(10.0, 10.0),
+                #     )
+                # )
             }, #type: ignore
-            curriculum=True
+            curriculum=False,
         )
 
         self.scene.terrain = TerrainImporterCfg(
@@ -484,11 +484,11 @@ class LegRobotParkourEnvCfg(LocomotionVelocityRoughEnvCfg):
             debug_vis=False,
         )
 
-        self.scene.env_spacing = 0.0
+        # self.scene.env_spacing = 0.0
 
         # TODO: Customize heigh scanner
         from omni.isaac.lab.sensors.ray_caster.patterns.patterns_cfg import GridPatternCfg
-        self.scene.height_scanner.debug_vis = True
+        self.scene.height_scanner.debug_vis = False
         self.scene.height_scanner.pattern_cfg = GridPatternCfg(resolution=0.1, size=(1.6, 1.0))
         # self.scene.terrain.terrain_type = "plane"
         # self.scene.terrain.terrain_generator = None
@@ -512,45 +512,45 @@ class LegRobotParkourEnvCfg_PLAY(LegRobotParkourEnvCfg):
         super().__post_init__()
 
 
-        self.scene.terrain = TerrainImporterCfg(
-            prim_path="/World/ground",
-            terrain_type="generator",
-            terrain_generator=ROUGH_TERRAINS_CFG,
-            max_init_terrain_level=5,
-            collision_group=-1,
-            physics_material=sim_utils.RigidBodyMaterialCfg(
-                friction_combine_mode="multiply",
-                restitution_combine_mode="multiply",
-                static_friction=1.0,
-                dynamic_friction=1.0,
-            ),
-            visual_material=sim_utils.MdlFileCfg(
-                mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
-                project_uvw=True,
-                texture_scale=(0.25, 0.25),
-            ),
-            debug_vis=False,
-        )
+        # self.scene.terrain = TerrainImporterCfg(
+        #     prim_path="/World/ground",
+        #     terrain_type="generator",
+        #     terrain_generator=ROUGH_TERRAINS_CFG,
+        #     max_init_terrain_level=5,
+        #     collision_group=-1,
+        #     physics_material=sim_utils.RigidBodyMaterialCfg(
+        #         friction_combine_mode="multiply",
+        #         restitution_combine_mode="multiply",
+        #         static_friction=1.0,
+        #         dynamic_friction=1.0,
+        #     ),
+        #     visual_material=sim_utils.MdlFileCfg(
+        #         mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
+        #         project_uvw=True,
+        #         texture_scale=(0.25, 0.25),
+        #     ),
+        #     debug_vis=False,
+        # )
 
 
-        self.scene.num_envs = 1
-        self.scene.env_spacing = 2.5
-        self.episode_length_s = 20.0
+        # self.scene.num_envs = 1
+        # self.scene.env_spacing = 2.5
+        # self.episode_length_s = 20.0
 
-        self.scene.terrain.max_init_terrain_level = 1
-        # reduce the number of terrains to save memory
-        if self.scene.terrain.terrain_generator is not None:
-            self.scene.terrain.terrain_generator.num_rows = 5
-            self.scene.terrain.terrain_generator.num_cols = 5
+        # self.scene.terrain.max_init_terrain_level = 1
+        # # reduce the number of terrains to save memory
+        # if self.scene.terrain.terrain_generator is not None:
+        #     self.scene.terrain.terrain_generator.num_rows = 5
+        #     self.scene.terrain.terrain_generator.num_cols = 5
 
-            self.scene.terrain.terrain_generator.curriculum = True
-            self.scene.terrain.num_envs = self.scene.num_envs
-            self.scene.terrain.debug_vis = True
+        #     self.scene.terrain.terrain_generator.curriculum = True
+        #     self.scene.terrain.num_envs = self.scene.num_envs
+        #     self.scene.terrain.debug_vis = True
 
-            self.scene.terrain.terrain_generator.sub_terrains["pyramid_stairs"].step_height_range = (0.01, 0.05) #type: ignore
-            self.scene.terrain.terrain_generator.sub_terrains["pyramid_stairs_inv"].step_height_range = (0.01, 0.05) #type: ignore
-            self.scene.terrain.terrain_generator.sub_terrains["boxes"].grid_height_range = (0.01, 0.02) #type: ignore
-            self.scene.terrain.terrain_generator.sub_terrains["random_rough"].noise_range = (0.01, 0.02) #type: ignore
+        #     self.scene.terrain.terrain_generator.sub_terrains["pyramid_stairs"].step_height_range = (0.01, 0.05) #type: ignore
+        #     self.scene.terrain.terrain_generator.sub_terrains["pyramid_stairs_inv"].step_height_range = (0.01, 0.05) #type: ignore
+        #     self.scene.terrain.terrain_generator.sub_terrains["boxes"].grid_height_range = (0.01, 0.02) #type: ignore
+        #     self.scene.terrain.terrain_generator.sub_terrains["random_rough"].noise_range = (0.01, 0.02) #type: ignore
 
         self.commands.base_velocity.ranges.lin_vel_x = (0.0, 0.8)
         self.commands.base_velocity.ranges.lin_vel_y = (0.0, 0.0)
@@ -565,13 +565,13 @@ class LegRobotParkourEnvCfg_PLAY(LegRobotParkourEnvCfg):
 
         #! Just for debug purposes
         #! Should be commented out when actually trainning
-        self.scene.height_scanner.debug_vis = False
-        self.viewer = ViewerCfg(
-            eye=(3, 3, 3),
-            origin_type='asset_root',
-            asset_name='robot',
-            env_index=0,
-        )
+        self.scene.height_scanner.debug_vis = True
+        # self.viewer = ViewerCfg(
+        #     eye=(3, 3, 3),
+        #     origin_type='asset_root',
+        #     asset_name='robot',
+        #     env_index=0,
+        # )
 
         # self.sim.render_interval = self.decimation * 2
         self.scene.contact_forces.debug_vis = False

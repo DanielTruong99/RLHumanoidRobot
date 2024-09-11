@@ -106,12 +106,12 @@ def main():
     #! Create a logger
     data_logger = Logger()
 
-    #! Set eviroment origin 
-    if env.unwrapped.scene.terrain.terrain_types[0] == 0:  #type: ignore
-        terrain = env.unwrapped.scene.terrain
-        terrain.env_origins[:] = terrain.terrain_origins[3, 4] #type: ignore
+    # #! Set eviroment origin 
+    # if env.unwrapped.scene.terrain.terrain_types[0] == 0:  #type: ignore
+    #     terrain = env.unwrapped.scene.terrain
+    #     terrain.env_origins[:] = terrain.terrain_origins[3, 4] #type: ignore
 
-        env.unwrapped.reset()
+    #     env.unwrapped.reset()
    
     # reset environment 
     obs, _ = env.get_observations()
@@ -132,7 +132,7 @@ def main():
             # env stepping
             obs, _, _, _ = env.step(actions)
 
-            obs[:, 9] = 0.5
+            obs[:, 9] = 1.0
             obs[:, 10] = 0.0
             obs[:, 11] = 0.0
 

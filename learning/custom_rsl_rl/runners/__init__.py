@@ -29,3 +29,4 @@
 # Copyright (c) 2021 ETH Zurich, Nikita Rudin
 
 from .amp_on_policy_runner import AMPOnPolicyRunner
+from .custom_on_policy_runner import CustomOnPolicyRunner
