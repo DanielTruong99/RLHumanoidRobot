@@ -201,62 +201,6 @@ class LegPlanarWalkEnv(DirectRLEnv):
             Returns:
                 torch.Tensor: The computed reward tensor.
         """
-        #* linear velocity TRACKING
-        lin_vel_error = torch.sum(torch.square(self._commands[:, :2] - self._robot.data.root_lin_vel_b[:, :2]), dim=1)
-        lin_vel_error_mapped = torch.exp(-lin_vel_error / 0.25)
-    
-        #* angular velocity TRACKING
-        yaw_rate_error = torch.square(self._commands[:, 2] - self._robot.data.root_ang_vel_b[:, 2])
-        yaw_rate_error_mapped = torch.exp(-yaw_rate_error / 0.25)
-
-        #* base height
-        base_height = torch.mean(self._height_scanner.data.pos_w[:, 2].unsqueeze(1) - self._height_scanner.data.ray_hits_w[..., 2], dim=1)
-        height_error = torch.square(base_height - self.cfg.base_height_target)
-        height_error_mapped = torch.exp(-height_error / 0.25)
-
-        #* flat orientation
-        flat_orientation = torch.sum(torch.square(self._robot.data.projected_gravity_b[:, :2]), dim=1)
-        flat_orientation = torch.exp(-flat_orientation / 0.25)
-
-        #* 1st order action rate
-        finite_diff = (self.actions - self._previous_actions) / self.step_dt
-        first_order_action_rate = torch.sum(torch.square(finite_diff), dim=1)
-
-        #* 2nd order action rate
-        finite_diff = (self.actions - 2.0 * self._previous_actions + self._previous_actions_2) / self.step_dt
-        second_order_action_rate =  torch.sum(torch.square(finite_diff), dim=1)
-
-        #* save energy
-        energy_consumption = torch.sum(torch.square(self._robot.data.applied_torque) * torch.square(self._robot.data.joint_vel), dim=1)
-
-        #* joint regularization
-        #! joint index has been defined in the __init__ method
-        error_R_yaw = torch.square(self._robot.data.joint_pos[:, self._R_hip_joint_index])
-        error_L_yaw = torch.square(self._robot.data.joint_pos[:, self._L_hip_joint_index])
-        error_hip2 = torch.square(self._robot.data.joint_pos[:, self._R_hip2_joint_index] - self._robot.data.joint_pos[:, self._L_hip2_joint_index])
-        error_thigh = torch.square(self._robot.data.joint_pos[:,self._R_thigh_joint_index] + self._robot.data.joint_pos[:, self._L_thigh_joint_index])
-        joint_regularization = torch.exp(-error_R_yaw/0.25) + torch.exp(-error_L_yaw/0.25) + torch.exp(-error_hip2/0.25) + torch.exp(-error_thigh/0.25)
-        joint_regularization = joint_regularization / 4.0
-
-        #* undersired contacts
-        net_contact_forces = self._contact_sensor.data.net_forces_w_history
-        is_contact = (
-            torch.max(torch.norm(net_contact_forces[:, :, self._underisred_contact_body_ids], dim=-1), dim=1)[0] > 1.0 # type: ignore
-        )
-        undersired_contacts = torch.sum(is_contact, dim=1)
-
-        #* is alive
-        is_alive = (~self.reset_terminated).float()
-
-        #* applied torque
-        applied_torque = torch.sum(torch.square(self._robot.data.applied_torque), dim=1)
-
-        #* applied torque rate
-        applied_torque_rate = torch.sum(torch.square(self._robot.data.applied_torque - self._previous_applied_torque), dim=1)
-
-        #* terminated penalty
-        terminated_penalty = self.reset_terminated.float()
-
         (
             lin_vel_error_mapped,
             yaw_rate_error_mapped,
