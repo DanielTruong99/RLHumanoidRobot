@@ -25,6 +25,9 @@ class LegPlanarWalkEnv(DirectRLEnv):
         self._previous_actions = torch.zeros(self.num_envs, self.cfg.num_actions, device=self.device)
         self._previous_actions_2 = torch.zeros(self.num_envs, self.cfg.num_actions, device=self.device)
 
+        #* minimal velocity command manager
+        self._time_left = torch.zeros(self.num_envs, device=self.device)
+
         #* vx, vy, wz commands
         self._commands = torch.zeros(self.num_envs, 3, device=self.device)
 
@@ -102,6 +105,9 @@ class LegPlanarWalkEnv(DirectRLEnv):
         if len(reset_env_ids) > 0:
             self._reset_idx(reset_env_ids) # type: ignore
 
+        #* resample the command if necessary
+        self._resample()
+        
         #* apply events
         if self.cfg.events:
             if "interval" in self.event_manager.available_modes:
@@ -115,7 +121,27 @@ class LegPlanarWalkEnv(DirectRLEnv):
             self.obs_buf["policy"] = self._observation_noise_model.apply(self.obs_buf["policy"]) #type: ignore
 
         return self.obs_buf, self.reward_buf, self.reset_terminated, self.reset_time_outs, self.extras
-        
+    
+    def _resample(self):
+        """Resample the commands if the time left is less than 0."""
+        self._time_left -= self.step_dt
+        resample_env_ids = (self._time_left <= 0.0).nonzero().flatten()
+        if len(resample_env_ids) > 0:
+            self._time_left[resample_env_ids] = self._time_left[resample_env_ids].uniform_(*self.cfg.commands.resampling_time_range)
+            self._resample_cmds(resample_env_ids)
+
+    def _resample_cmds(self, env_ids: torch.Tensor):
+        r = torch.empty(len(env_ids), device=self.device)
+
+        #* linear velocity - x direction
+        self._commands[env_ids, 0] = r.uniform_(*self.cfg.commands.ranges_lin_vel_x)
+
+        #* linear velocity - y direction
+        self._commands[env_ids, 1] = r.uniform_(*self.cfg.commands.ranges_lin_vel_y)
+
+        #* ang vel yaw - rotation around z
+        self._commands[env_ids, 2] = r.uniform_(*self.cfg.commands.ranges_ang_vel_z)
+
     def _setup_scene(self):
         """Setup the scene for the environment."""
         #* Add the robot
@@ -193,7 +219,67 @@ class LegPlanarWalkEnv(DirectRLEnv):
         )
 
         return {"policy": obs}
+
+    def _reset_idx(self, env_ids: torch.Tensor | None):
+        if env_ids is None or len(env_ids) == self.num_envs:
+            env_ids = self._robot._ALL_INDICES  # type: ignore
+
+        #* reset the robot
+        self._robot.reset(env_ids) #type: ignore
+
+        #* reset the scene and noise model
+        #* event manager also trigger "reset" event
+        super()._reset_idx(env_ids) #type: ignore
+        if self.cfg.events:
+            if "reset" in self.event_manager.available_modes:
+                self.event_manager.apply(mode="reset", env_ids=env_ids) #type: ignore
+            self.event_manager.reset(env_ids) #type: ignore
+
+        if len(env_ids) == self.num_envs:
+            self.episode_length_buf[:] = torch.randint_like(self.episode_length_buf, high=int(self.max_episode_length))
+
+        #* reset user buffers
+        self._previous_actions[env_ids] = 0.0
+        self._previous_actions_2[env_ids] = 0.0
+
+        #todo Sample new commands
+        #//self._commands[env_ids] = torch.zeros_like(self._commands[env_ids]).uniform_(-1.0, 1.0)
     
+        #* Logging
+        extras = dict()
+        for key in self._episode_sums.keys():
+            episodic_sum_avg = torch.mean(self._episode_sums[key][env_ids])
+            extras["Episode Reward/" + key] = episodic_sum_avg / self.max_episode_length_s
+            self._episode_sums[key][env_ids] = 0.0
+        self.extras["log"] = dict()
+        self.extras["log"].update(extras)
+        extras = dict()
+        extras["Episode Termination/base_contact"] = torch.count_nonzero(self.reset_terminated[env_ids]).item()
+        extras["Episode Termination/time_out"] = torch.count_nonzero(self.reset_time_outs[env_ids]).item()
+        self.extras["log"].update(extras)
+
+    def _get_dones(self) -> tuple[torch.Tensor, torch.Tensor]:
+        time_out = self.episode_length_buf >= self.max_episode_length - 1
+
+        #* check if the base is in contact with the ground
+        net_contact_forces = self._contact_sensor.data.net_forces_w_history
+        died = torch.any(torch.max(torch.norm(net_contact_forces[:, :, self._base_id], dim=-1), dim=1)[0] > 1.0, dim=1) # type: ignore
+
+        #* check if the base's pitch and roll eceeded the limits
+        is_exceed_gx = torch.abs(self._robot.data.projected_gravity_b[:, 0]) > 0.85
+        is_exceed_gy = torch.abs(self._robot.data.projected_gravity_b[:, 1]) > 0.85
+        died |=  is_exceed_gx; died |= is_exceed_gy
+
+        #* check if the base's linear velocity exceeded the limit
+        is_exceed_v = torch.norm(self._robot.data.root_lin_vel_b[:, :2], dim=1) > 11.0
+        died |= is_exceed_v
+
+        #* check if the base's angular velocity exceeded the limit
+        is_exceed_w = torch.norm(self._robot.data.root_ang_vel_b, dim=1) > 7.0
+        died |= is_exceed_w
+
+        return died, time_out
+
     def _get_rewards(self) -> torch.Tensor:
         """
             Get the rewards from the environment.
@@ -294,11 +380,11 @@ def compute_rewards(
     reset_terminated: torch.Tensor,
     previous_applied_torque: torch.Tensor
 ):
-    #* linear velocity TRACKING
+    #* linear velocity tracking
     lin_vel_error = torch.sum(torch.square(commands[:, :2] - root_lin_vel_b[:, :2]), dim=1)
     lin_vel_error_mapped = torch.exp(-lin_vel_error / 0.25)
     
-    #* angular velocity TRACKING
+    #* angular velocity tracking
     yaw_rate_error = torch.square(commands[:, 2] - root_ang_vel_b[:, 2])
     yaw_rate_error_mapped = torch.exp(-yaw_rate_error / 0.25)
 

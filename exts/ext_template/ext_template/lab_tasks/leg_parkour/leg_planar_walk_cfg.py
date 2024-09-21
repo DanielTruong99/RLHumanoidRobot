@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import torch
+import math
 
 import omni.isaac.lab.sim as sim_utils
+import omni.isaac.lab_tasks.manager_based.locomotion.velocity.mdp as mdp
 from omni.isaac.lab.assets import ArticulationCfg
 from omni.isaac.lab.envs import DirectRLEnvCfg
 from omni.isaac.lab.scene import InteractiveSceneCfg
@@ -14,6 +16,12 @@ from omni.isaac.lab.actuators import ImplicitActuatorCfg
 from omni.isaac.lab.utils.assets import ISAACLAB_NUCLEUS_DIR
 from omni.isaac.lab.utils.noise import AdditiveUniformNoiseCfg as UNoiseCfg
 from omni.isaac.lab.utils.noise import NoiseModelCfg
+from omni.isaac.lab.managers import EventTermCfg
+
+##
+#! user Custom configs
+##
+from . import mdp as custom_mdp
 
 ##
 #! Pre-defined configs
@@ -21,10 +29,79 @@ from omni.isaac.lab.utils.noise import NoiseModelCfg
 from omni.isaac.lab.terrains.config.rough import ROUGH_TERRAINS_CFG
 from exts.ext_template.ext_template.lab_assets import LEGPARKOUR_CFG
 
+@configclass
+class EventCfg:
+    reset_base = EventTermCfg(
+        func=mdp.reset_root_state_uniform,
+        mode="reset",
+        params={
+            "pose_range": {
+                "x": (-0.0, 0.0), 
+                "y": (-0.0, 0.0),  
+                "roll": (-math.pi/10, math.pi/10),
+                "pitch": (-math.pi/10, math.pi/10),
+                "yaw": (-math.pi/10, math.pi/10)
+            },
+            "velocity_range": {
+                "x": (-0.5, 0.5),
+                "y": (-0.5, 0.5),
+                "z": (-0.5, 0.5),
+                "roll": (-0.5, 0.5),
+                "pitch": (-0.5, 0.5),
+                "yaw": (-0.5, 0.5),
+            },  
+        },
+    )
+
+    reset_robot_joints = EventTermCfg(
+        func=custom_mdp.reset_joints_by_offset,
+        mode="reset",
+        params={
+            "position_range": {
+                'R_hip_joint': (-0.1, 0.1),
+                'R_hip2_joint': (-0.2, 0.2),
+                'R_thigh_joint': (-0.2, 0.2),
+                'R_calf_joint': (0.0, 0.2),
+                'R_toe_joint': (-0.3, 0.3),
+                'L_hip_joint': (-0.1, 0.1),
+                'L_hip2_joint': (-0.2, 0.2),
+                'L_thigh_joint': (-0.2, 0.2),
+                'L_calf_joint': (0.0, 0.2),
+                'L_toe_joint': (-0.3, 0.3),
+            },
+            "velocity_range": {
+                'R_hip_joint': (-0.1, 0.1),
+                'R_hip2_joint': (-0.1, 0.1),
+                'R_thigh_joint': (-0.1, 0.1),
+                'R_calf_joint': (-0.1, 0.1),
+                'R_toe_joint': (-0.1, 0.1),
+                'L_hip_joint': (-0.1, 0.1),
+                'L_hip2_joint': (-0.1, 0.1),
+                'L_thigh_joint': (-0.1, 0.1),
+                'L_calf_joint': (-0.1, 0.1),
+                'L_toe_joint': (-0.1, 0.1),
+            }
+        },
+    )
+
+    push_robot = EventTermCfg(
+        func=mdp.push_by_setting_velocity,
+        mode="interval",
+        interval_range_s=(2.5, 2.5),
+        params={"velocity_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5)}},
+    )
+
+@configclass
+class CommandCfg:
+    resampling_time_range = (5.0, 5.0)
+    ranges_lin_vel_x = (0.0, 1.0)
+    ranges_lin_vel_y = (-0.3, 0.3)
+    ranges_ang_vel_z = (-1.0, 1.0)
 
 @configclass
 class LegPlanarWalkEnvCfg(DirectRLEnvCfg):
     """configuration class for the LegPlanarWalkEnv environment
+        0. event manager configuration
         1. env configuration
         2. simulation configuration
         3. scene configuration
@@ -34,6 +111,11 @@ class LegPlanarWalkEnvCfg(DirectRLEnvCfg):
         7. height scanner configuration
         8. observation noise model configuration
     """
+    #* command configuration
+    commands = CommandCfg()
+
+    #* event manager configuration
+    events = EventCfg()
 
     #* env
     episode_length_s = 20.0
