@@ -1,5 +1,5 @@
 
-from .all_mixers import EncoderStateAcRecurrent
+from .all_mixer import EncoderStateAcRecurrent
 
 def build_actor_critic(env, policy_class_name, policy_cfg):
     """ NOTE: This method allows to hack the policy kwargs by adding the env attributes to the policy_cfg. """

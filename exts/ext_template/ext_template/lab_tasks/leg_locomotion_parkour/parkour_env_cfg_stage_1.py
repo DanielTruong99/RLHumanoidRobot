@@ -424,8 +424,6 @@ class TerminationsCfg:
     )
 
 
-
-
 @configclass
 class LegRobotParkourEnvCfg(LocomotionVelocityRoughEnvCfg):
     
