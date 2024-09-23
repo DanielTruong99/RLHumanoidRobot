@@ -118,6 +118,7 @@ class LegPlanarWalkEnv(DirectRLEnv):
 
         #* add observation noise
         if self.cfg.observation_noise_model:
+
             self.obs_buf["policy"] = self._observation_noise_model.apply(self.obs_buf["policy"]) #type: ignore
 
         return self.obs_buf, self.reward_buf, self.reset_terminated, self.reset_time_outs, self.extras
