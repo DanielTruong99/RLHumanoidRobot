@@ -5,6 +5,7 @@ import math
 
 import omni.isaac.lab.sim as sim_utils
 import omni.isaac.lab_tasks.manager_based.locomotion.velocity.mdp as mdp
+import omni.isaac.lab.terrains as terrain_gen
 from omni.isaac.lab.assets import ArticulationCfg
 from omni.isaac.lab.envs import DirectRLEnvCfg
 from omni.isaac.lab.scene import InteractiveSceneCfg
@@ -15,8 +16,9 @@ from omni.isaac.lab.utils import configclass
 from omni.isaac.lab.actuators import ImplicitActuatorCfg
 from omni.isaac.lab.utils.assets import ISAACLAB_NUCLEUS_DIR
 from omni.isaac.lab.utils.noise import AdditiveUniformNoiseCfg as UNoiseCfg
-from omni.isaac.lab.utils.noise import NoiseModelCfg
+from omni.isaac.lab.utils.noise import NoiseModelCfg, NoiseModel
 from omni.isaac.lab.managers import EventTermCfg
+from omni.isaac.lab.terrains.terrain_generator_cfg import TerrainGeneratorCfg
 
 ##
 #! user Custom configs
@@ -28,6 +30,13 @@ from . import mdp as custom_mdp
 ##
 from omni.isaac.lab.terrains.config.rough import ROUGH_TERRAINS_CFG
 from exts.ext_template.ext_template.lab_assets import LEGPARKOUR_CFG
+
+class CustomNoiseModel(NoiseModel):
+    def __init__(self, num_envs: int, noise_model_cfg: NoiseModelCfg, device: str):
+        super().__init__(num_envs, noise_model_cfg)
+        self._device = device
+
+
 
 @configclass
 class EventCfg:
@@ -180,6 +189,22 @@ class LegPlanarWalkEnvCfg(DirectRLEnvCfg):
     )
 
     #* terrain configuration
+    PARKOUR_TERRAINS_CFG = TerrainGeneratorCfg(
+        size=(20.0, 20.0),
+        border_width=20.0,
+        num_rows=5,
+        num_cols=5,
+        horizontal_scale=0.1,
+        vertical_scale=0.005,
+        slope_threshold=0.75,
+        use_cache=False,
+        sub_terrains={
+            "random_rough": terrain_gen.HfRandomUniformTerrainCfg(
+                proportion=0.2, noise_range=(0.00, 0.02), noise_step=0.02, border_width=0.0
+            ),
+        }, #type: ignore
+        curriculum=False,
+    )    
     terrain = TerrainImporterCfg(
         prim_path="/World/ground",
         terrain_type="generator",
@@ -212,6 +237,7 @@ class LegPlanarWalkEnvCfg(DirectRLEnvCfg):
 
     #* observation noise model configuration
     observation_noise_model = NoiseModelCfg(
+        class_type=CustomNoiseModel,
         noise_cfg=UNoiseCfg(
             n_min=torch.cat([
                 torch.tensor([-0.1] * 3),   # v: base linear velocity (3,)

@@ -106,7 +106,7 @@ class LegPlanarWalkEnv(DirectRLEnv):
             self._reset_idx(reset_env_ids) # type: ignore
 
         #* resample the command if necessary
-        self._resample()
+        self._command_compute(self.step_dt)
         
         #* apply events
         if self.cfg.events:
@@ -123,13 +123,18 @@ class LegPlanarWalkEnv(DirectRLEnv):
 
         return self.obs_buf, self.reward_buf, self.reset_terminated, self.reset_time_outs, self.extras
     
-    def _resample(self):
-        """Resample the commands if the time left is less than 0."""
-        self._time_left -= self.step_dt
+    def _command_compute(self, dt: float):
+        self._time_left -= dt
         resample_env_ids = (self._time_left <= 0.0).nonzero().flatten()
         if len(resample_env_ids) > 0:
             self._time_left[resample_env_ids] = self._time_left[resample_env_ids].uniform_(*self.cfg.commands.resampling_time_range)
-            self._resample_cmds(resample_env_ids)
+            self._resample(resample_env_ids)
+
+    def _resample(self, env_ids):
+        """Resample the commands if the time left is less than 0."""
+        if len(env_ids) != 0:
+            self._time_left[env_ids] = self._time_left[env_ids].uniform_(*self.cfg.commands.resampling_time_range)
+            self._resample_cmds(env_ids)
 
     def _resample_cmds(self, env_ids: torch.Tensor):
         r = torch.empty(len(env_ids), device=self.device)
@@ -196,9 +201,9 @@ class LegPlanarWalkEnv(DirectRLEnv):
         self._previous_applied_torque = self._robot.data.applied_torque.clone()
 
         height_data = (
-            self._height_scanner.data.pos_w[:, 2].unsqueeze(1) - self._height_scanner.data.ray_hits_w[..., 2] - 0.5
+            self._height_scanner.data.pos_w[:, 2].unsqueeze(1) - self._height_scanner.data.ray_hits_w[..., 2]
         )
-        estimated_height = torch.mean(self._height_scanner.data.pos_w[:, 2].unsqueeze(1) - self._height_scanner.data.ray_hits_w[..., 2], dim=1)
+        estimated_height = torch.mean(self._height_scanner.data.pos_w[:, 2].unsqueeze(1) - self._height_scanner.data.ray_hits_w[..., 2], dim=1).unsqueeze(1)
 
         foot_contact_force = self._contact_sensor.data.net_forces_w[:, self._feet_ids, 2] # type: ignore
         foot_contact_state = torch.gt(foot_contact_force, 0.0).float()
@@ -232,8 +237,6 @@ class LegPlanarWalkEnv(DirectRLEnv):
         #* event manager also trigger "reset" event
         super()._reset_idx(env_ids) #type: ignore
         if self.cfg.events:
-            if "reset" in self.event_manager.available_modes:
-                self.event_manager.apply(mode="reset", env_ids=env_ids) #type: ignore
             self.event_manager.reset(env_ids) #type: ignore
 
         if len(env_ids) == self.num_envs:
@@ -243,8 +246,8 @@ class LegPlanarWalkEnv(DirectRLEnv):
         self._previous_actions[env_ids] = 0.0
         self._previous_actions_2[env_ids] = 0.0
 
-        #todo Sample new commands
-        #//self._commands[env_ids] = torch.zeros_like(self._commands[env_ids]).uniform_(-1.0, 1.0)
+        #* sample new commands
+        self._resample(env_ids)
     
         #* Logging
         extras = dict()
@@ -370,14 +373,14 @@ def compute_rewards(
     applied_torque: torch.Tensor,
     joint_vel: torch.Tensor,
     joint_pos: torch.Tensor,
-    R_hip_joint_index,
-    L_hip_joint_index,
-    R_hip2_joint_index,
-    L_hip2_joint_index,
-    R_thigh_joint_index,
-    L_thigh_joint_index,
+    R_hip_joint_index: list[int],
+    L_hip_joint_index: list[int],
+    R_hip2_joint_index: list[int],
+    L_hip2_joint_index: list[int],
+    R_thigh_joint_index: list[int],
+    L_thigh_joint_index: list[int],
     contact_sensor_net_forces_w_history,
-    underisred_contact_body_ids,
+    underisred_contact_body_ids: list[int],
     reset_terminated: torch.Tensor,
     previous_applied_torque: torch.Tensor
 ):
