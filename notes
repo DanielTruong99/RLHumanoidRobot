@@ -1,0 +1,2 @@
+emperical expeariment running PPO:
+    the more init_std small, the more training process stable

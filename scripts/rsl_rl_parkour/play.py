@@ -33,6 +33,7 @@ import os
 import torch
 
 from rsl_rl.runners import OnPolicyRunner
+from learning.rsl_rl_parkour.runners import CustomOnPolicyRunner
 
 # Import extensions to set up environment tasks
 # import ext_template.tasks  # noqa: F401
@@ -79,10 +80,15 @@ def main():
     env_cfg = parse_env_cfg(args_cli.task, use_gpu=not args_cli.cpu, num_envs=args_cli.num_envs)
     agent_cfg: RslRlOnPolicyRunnerCfg = cli_args.parse_rsl_rl_cfg(args_cli.task, args_cli)
 
+    #! custom the configuration for play
+    # agent_cfg.resume = True
+    # agent_cfg.load_run = '2024-09-25_00-59-28'
+    # agent_cfg.load_checkpoint = 'model_21700.pt'
+
     # create isaac environment
     env = gym.make(args_cli.task, cfg=env_cfg)
     # wrap around environment for rsl-rl
-    env = RslRlVecEnvWrapper(env) # type: ignore
+    env = RslRlVecEnvWrapper(env)
 
     # specify directory for logging experiments
     log_root_path = os.path.join("logs", "rsl_rl", agent_cfg.experiment_name)
@@ -92,7 +98,7 @@ def main():
     print(f"[INFO]: Loading model checkpoint from: {resume_path}")
 
     # load previously trained model
-    ppo_runner = OnPolicyRunner(env, agent_cfg.to_dict(), log_dir=None, device=agent_cfg.device) # type: ignore
+    ppo_runner = CustomOnPolicyRunner(env, agent_cfg.to_dict(), log_dir=None, device=agent_cfg.device)
     ppo_runner.load(resume_path)
     print(f"[INFO]: Loading model checkpoint from: {resume_path}")
 
@@ -100,13 +106,13 @@ def main():
     policy = ppo_runner.get_inference_policy(device=env.unwrapped.device)
 
     # export policy to onnx
-    export_model_dir = os.path.join(os.path.dirname(resume_path), "exported")
-    export_policy_as_onnx(ppo_runner.alg.actor_critic, export_model_dir, filename="policy.onnx")
+    # export_model_dir = os.path.join(os.path.dirname(resume_path), "exported")
+    # export_policy_as_onnx(ppo_runner.alg.actor_critic, export_model_dir, filename="policy.onnx")
 
     #! Create a logger
     data_logger = Logger()
 
-    # #! Set evironment origin 
+    # #! Set eviroment origin 
     # if env.unwrapped.scene.terrain.terrain_types[0] == 0:  #type: ignore
     #     terrain = env.unwrapped.scene.terrain
     #     terrain.env_origins[:] = terrain.terrain_origins[3, 4] #type: ignore
@@ -115,6 +121,7 @@ def main():
    
     # reset environment 
     obs, _ = env.get_observations()
+
 
     policy_counter = 0
     policy_step_dt = env.unwrapped.step_dt
@@ -132,35 +139,38 @@ def main():
             # env stepping
             obs, _, _, _ = env.step(actions)
 
-            obs[:, 9] = 1.0
-            obs[:, 10] = 0.0
-            obs[:, 11] = 0.0
+            env.unwrapped._commands[:, 0] = 0.9
+            env.unwrapped._commands[:, 1] = 0.0
+            env.unwrapped._commands[:, 2] = 0.0
+            # obs[:, 9] = 1.0
+            # obs[:, 10] = 0.0
+            # obs[:, 11] = 0.0
 
             policy_counter += 1
 
-            if policy_counter < stop_state_log:
-                data_frame = {
-                    'time_step': policy_counter*policy_step_dt,
-                    'c_x': obs[:, 9].item(),
-                    'c_y': obs[:, 10].item(),
-                    'c_z': obs[:, 11].item(),
-                    'base_x': env.env.scene["robot"].data.root_pos_w[0, 0].item(),
-                    'base_y': env.env.scene["robot"].data.root_pos_w[0, 1].item(),
-                    'base_z': env.env.scene["robot"].data.root_pos_w[0, 2].item(),
-                    'base_vx': env.env.scene["robot"].data.root_lin_vel_b[0, 0].item(),
-                    'base_vy': env.env.scene["robot"].data.root_lin_vel_b[0, 1].item(),
-                    'base_vz': env.env.scene["robot"].data.root_lin_vel_b[0, 2].item(),
-                    'base_wx': env.env.scene["robot"].data.root_ang_vel_b[0, 0].item(),
-                    'base_wy': env.env.scene["robot"].data.root_ang_vel_b[0, 1].item(),
-                    'base_wz': env.env.scene["robot"].data.root_ang_vel_b[0, 2].item(),
-                    **{'pos_' + key : env.env.scene["robot"].data.joint_pos[0, index].item() for index, key in enumerate(DOF_NAMES)},
-                    **{'vel_' + key : env.env.scene["robot"].data.joint_vel[0, index].item() for index, key in enumerate(DOF_NAMES)},
-                    **{'torque_' + key : env.env.scene["robot"].data.applied_torque[0, index].item() for index, key in enumerate(DOF_NAMES)},
-                }
+            # if policy_counter < stop_state_log:
+            #     data_frame = {
+            #         'time_step': policy_counter*policy_step_dt,
+            #         'c_x': obs[:, 9].item(),
+            #         'c_y': obs[:, 10].item(),
+            #         'c_z': obs[:, 11].item(),
+            #         'base_x': env.env.scene["robot"].data.root_pos_w[0, 0].item(),
+            #         'base_y': env.env.scene["robot"].data.root_pos_w[0, 1].item(),
+            #         'base_z': env.env.scene["robot"].data.root_pos_w[0, 2].item(),
+            #         'base_vx': env.env.scene["robot"].data.root_lin_vel_b[0, 0].item(),
+            #         'base_vy': env.env.scene["robot"].data.root_lin_vel_b[0, 1].item(),
+            #         'base_vz': env.env.scene["robot"].data.root_lin_vel_b[0, 2].item(),
+            #         'base_wx': env.env.scene["robot"].data.root_ang_vel_b[0, 0].item(),
+            #         'base_wy': env.env.scene["robot"].data.root_ang_vel_b[0, 1].item(),
+            #         'base_wz': env.env.scene["robot"].data.root_ang_vel_b[0, 2].item(),
+            #         **{'pos_' + key : env.env.scene["robot"].data.joint_pos[0, index].item() for index, key in enumerate(DOF_NAMES)},
+            #         **{'vel_' + key : env.env.scene["robot"].data.joint_vel[0, index].item() for index, key in enumerate(DOF_NAMES)},
+            #         **{'torque_' + key : env.env.scene["robot"].data.applied_torque[0, index].item() for index, key in enumerate(DOF_NAMES)},
+            #     }
 
-                data_logger.log_states(data_frame)
-            else:
-                data_logger.save_log('analysis/data/state_log.csv')
+            #     data_logger.log_states(data_frame)
+            # else:
+            #     data_logger.save_log('analysis/data/state_log.csv')
                 
 
 

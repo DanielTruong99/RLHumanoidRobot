@@ -59,7 +59,7 @@ class LegPlanarWalkEnv(DirectRLEnv):
                 "second_order_action_rate",
                 "energy_consumption",
                 "joint_regularization",
-                "undersired_contacts",
+                "undesired_contacts",
                 "is_alive",
                 "applied_torque",
                 "applied_torque_rate",
@@ -106,7 +106,8 @@ class LegPlanarWalkEnv(DirectRLEnv):
             self._reset_idx(reset_env_ids) # type: ignore
 
         #* resample the command if necessary
-        self._command_compute(self.step_dt)
+        if self.cfg.commands:
+            self._command_compute(self.step_dt)
         
         #* apply events
         if self.cfg.events:
@@ -202,8 +203,8 @@ class LegPlanarWalkEnv(DirectRLEnv):
 
         height_data = (
             self._height_scanner.data.pos_w[:, 2].unsqueeze(1) - self._height_scanner.data.ray_hits_w[..., 2]
-        )
-        estimated_height = torch.mean(self._height_scanner.data.pos_w[:, 2].unsqueeze(1) - self._height_scanner.data.ray_hits_w[..., 2], dim=1).unsqueeze(1)
+        ).clip(-1.0, 1.0)
+        estimated_height = torch.mean(height_data, dim=1).unsqueeze(1)
 
         foot_contact_force = self._contact_sensor.data.net_forces_w[:, self._feet_ids, 2] # type: ignore
         foot_contact_state = torch.gt(foot_contact_force, 0.0).float()
@@ -247,7 +248,8 @@ class LegPlanarWalkEnv(DirectRLEnv):
         self._previous_actions_2[env_ids] = 0.0
 
         #* sample new commands
-        self._resample(env_ids)
+        if self.cfg.commands:
+            self._resample(env_ids)
     
         #* Logging
         extras = dict()
@@ -258,7 +260,7 @@ class LegPlanarWalkEnv(DirectRLEnv):
         self.extras["log"] = dict()
         self.extras["log"].update(extras)
         extras = dict()
-        extras["Episode Termination/base_contact"] = torch.count_nonzero(self.reset_terminated[env_ids]).item()
+        extras["Episode Termination/died"] = torch.count_nonzero(self.reset_terminated[env_ids]).item()
         extras["Episode Termination/time_out"] = torch.count_nonzero(self.reset_time_outs[env_ids]).item()
         self.extras["log"].update(extras)
 
@@ -272,15 +274,15 @@ class LegPlanarWalkEnv(DirectRLEnv):
         #* check if the base's pitch and roll eceeded the limits
         is_exceed_gx = torch.abs(self._robot.data.projected_gravity_b[:, 0]) > 0.85
         is_exceed_gy = torch.abs(self._robot.data.projected_gravity_b[:, 1]) > 0.85
-        died |=  is_exceed_gx; died |= is_exceed_gy
+        # died |=  is_exceed_gx; died |= is_exceed_gy
 
         #* check if the base's linear velocity exceeded the limit
         is_exceed_v = torch.norm(self._robot.data.root_lin_vel_b[:, :2], dim=1) > 11.0
-        died |= is_exceed_v
+        # died |= is_exceed_v
 
         #* check if the base's angular velocity exceeded the limit
         is_exceed_w = torch.norm(self._robot.data.root_ang_vel_b, dim=1) > 7.0
-        died |= is_exceed_w
+        # died |= is_exceed_w
 
         return died, time_out
 
@@ -410,13 +412,13 @@ def compute_rewards(
     second_order_action_rate = torch.sum(torch.square(finite_diff_2nd_order), dim=1)
 
     #* save energy
-    energy_consumption = torch.sum(torch.square(applied_torque) * torch.square(joint_vel), dim=1)
+    energy_consumption = torch.sum(torch.square(applied_torque * joint_vel), dim=1)
 
     #* joint regularization
-    error_R_yaw = torch.square(joint_pos[:, R_hip_joint_index])
-    error_L_yaw = torch.square(joint_pos[:, L_hip_joint_index])
-    error_hip2 = torch.square(joint_pos[:, R_hip2_joint_index] - joint_pos[:, L_hip2_joint_index])
-    error_thigh = torch.square(joint_pos[:, R_thigh_joint_index] + joint_pos[:, L_thigh_joint_index])
+    error_R_yaw = torch.square(joint_pos[:, R_hip_joint_index[0]])
+    error_L_yaw = torch.square(joint_pos[:, L_hip_joint_index[0]])
+    error_hip2 = torch.square(joint_pos[:, R_hip2_joint_index[0]] - joint_pos[:, L_hip2_joint_index[0]])
+    error_thigh = torch.square(joint_pos[:, R_thigh_joint_index[0]] + joint_pos[:, L_thigh_joint_index[0]])
     joint_regularization = (torch.exp(-error_R_yaw / 0.25) + torch.exp(-error_L_yaw / 0.25) + 
                             torch.exp(-error_hip2 / 0.25) + torch.exp(-error_thigh / 0.25)) / 4.0
 
@@ -428,7 +430,7 @@ def compute_rewards(
     is_alive = (~reset_terminated).float()
 
     #* applied torque
-    applied_torque = torch.sum(torch.square(applied_torque), dim=1)
+    applied_torque_penalty = torch.sum(torch.square(applied_torque), dim=1)
 
     #* applied torque rate
     applied_torque_rate = torch.sum(torch.square(applied_torque - previous_applied_torque), dim=1)
@@ -447,7 +449,7 @@ def compute_rewards(
         joint_regularization,
         undesired_contacts,
         is_alive,
-        applied_torque,
+        applied_torque_penalty,
         applied_torque_rate,
         terminated_penalty
     )

@@ -6,28 +6,48 @@ from omni.isaac.lab_tasks.utils.wrappers.rsl_rl import (
     RslRlPpoAlgorithmCfg,
 )
 
+@configclass
+class RslRlPpoEncoderActorCriticCfg(RslRlPpoActorCriticCfg):
+    class_name="EncoderActorCritic"
+    init_noise_std=0.2
+    actor_hidden_dims=[256, 256, 256]
+    critic_hidden_dims=[256, 256, 256]
+    activation="celu"
+
+    memory_cfg: dict = {
+        "type": "gru",
+        "num_layers": 1,
+        "hidden_size": 256,
+        "input_dim": 45 + 32, # proprioception + latent height
+    }
+
+    encoder_cfg: dict = {
+        "input_dim": 220,
+        "hidden_dims": [128, 64],
+        "activation": "celu",
+        "output_dim": 32,
+    }
+
 
 @configclass
 class LegPlanarWalkPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 24
-    max_iterations = 1000
+    max_iterations = 3000
     save_interval = 50
     experiment_name = "leg_planar_walk"
     empirical_normalization = False
-    policy = RslRlPpoActorCriticCfg(
-        init_noise_std=1.0,
-        actor_hidden_dims=[128, 128, 128],
-        critic_hidden_dims=[128, 128, 128],
-        activation="elu",
-    )
+
+    policy = RslRlPpoEncoderActorCriticCfg()
+
     algorithm = RslRlPpoAlgorithmCfg(
+        class_name="CustomPPO",
         value_loss_coef=1.0,
         use_clipped_value_loss=True,
         clip_param=0.2,
-        entropy_coef=0.005,
+        entropy_coef=0.01,
         num_learning_epochs=5,
         num_mini_batches=4,
-        learning_rate=1.0e-3,
+        learning_rate=1.0e-5,
         schedule="adaptive",
         gamma=0.99,
         lam=0.95,

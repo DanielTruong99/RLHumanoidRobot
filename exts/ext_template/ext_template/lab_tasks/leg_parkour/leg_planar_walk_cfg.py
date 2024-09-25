@@ -103,9 +103,9 @@ class EventCfg:
 @configclass
 class CommandCfg:
     resampling_time_range = (5.0, 5.0)
-    ranges_lin_vel_x = (0.0, 1.0)
-    ranges_lin_vel_y = (-0.3, 0.3)
-    ranges_ang_vel_z = (-1.0, 1.0)
+    ranges_lin_vel_x = (0.0, 1.5)
+    ranges_lin_vel_y = (-0.1, 0.1)
+    ranges_ang_vel_z = (-0.5, 0.5)
 
 @configclass
 class LegPlanarWalkEnvCfg(DirectRLEnvCfg):
@@ -127,11 +127,11 @@ class LegPlanarWalkEnvCfg(DirectRLEnvCfg):
     events = EventCfg()
 
     #* env
-    episode_length_s = 20.0
+    episode_length_s = 5.0
     decimation = 2
     action_scale = 1.0
     num_actions = 10
-    num_observations = 3 + 3 + 3 + 3 + 10 + 10 + 10 + 2 + 1 + 209 #! NEED TO BE CHANGED
+    num_observations = 3 + 3 + 3 + 3 + 10 + 10 + 10 + 2 + 1 + 220 #! NEED TO BE CHANGED
     num_states = 0
 
     #* simulation
@@ -200,7 +200,7 @@ class LegPlanarWalkEnvCfg(DirectRLEnvCfg):
         use_cache=False,
         sub_terrains={
             "random_rough": terrain_gen.HfRandomUniformTerrainCfg(
-                proportion=0.2, noise_range=(0.00, 0.02), noise_step=0.02, border_width=0.0
+                proportion=0.2, noise_range=(0.00, 0.07), noise_step=0.005, border_width=0.0
             ),
         }, #type: ignore
         curriculum=False,
@@ -208,7 +208,7 @@ class LegPlanarWalkEnvCfg(DirectRLEnvCfg):
     terrain = TerrainImporterCfg(
         prim_path="/World/ground",
         terrain_type="generator",
-        terrain_generator=ROUGH_TERRAINS_CFG,
+        terrain_generator=PARKOUR_TERRAINS_CFG,
         max_init_terrain_level=9,
         collision_group=-1,
         physics_material=sim_utils.RigidBodyMaterialCfg(
@@ -240,28 +240,28 @@ class LegPlanarWalkEnvCfg(DirectRLEnvCfg):
         class_type=CustomNoiseModel,
         noise_cfg=UNoiseCfg(
             n_min=torch.cat([
-                torch.tensor([-0.1] * 3),   # v: base linear velocity (3,)
-                torch.tensor([-0.2] * 3),   # w: base angular velocity (3,)
-                torch.tensor([-0.05] * 3),  # g: projected gravity (3,)
-                torch.tensor([0.0] * 3),    # c: commands (3,)
-                torch.tensor([-0.01] * 10), # p: joint positions (10,)
-                torch.tensor([-1.5] * 10),  # p_dot: joint velocities (10,)
-                torch.tensor([0.0] * 10),   # a: last actions (10,)
-                torch.tensor([0.0] * 2),  # foot_contact_state: foot_contact_state (2,)
-                torch.tensor([0.0] * 1), # estimated_height: estimated_height (1,)
-                torch.tensor([-0.1] * 209)  # height_data: height scanner (209,)
+                torch.tensor([-0.1] * 3, device=sim.device),   # v: base linear velocity (3,)
+                torch.tensor([-0.2] * 3, device=sim.device),   # w: base angular velocity (3,)
+                torch.tensor([-0.05] * 3, device=sim.device),  # g: projected gravity (3,)
+                torch.tensor([0.0] * 3, device=sim.device),    # c: commands (3,)
+                torch.tensor([-0.01] * 10, device=sim.device), # p: joint positions (10,)
+                torch.tensor([-1.5] * 10, device=sim.device),  # p_dot: joint velocities (10,)
+                torch.tensor([0.0] * 10, device=sim.device),   # a: last actions (10,)
+                torch.tensor([0.0] * 2, device=sim.device),    # foot_contact_state: foot_contact_state (2,)
+                torch.tensor([0.0] * 1, device=sim.device),    # estimated_height: estimated_height (1,)
+                torch.tensor([-0.1] * 220, device=sim.device)  # height_data: height scanner (220,)
             ]), 
             n_max=torch.cat([
-                torch.tensor([0.1] * 3),   # v: base linear velocity (3,)
-                torch.tensor([0.2] * 3),   # w: base angular velocity (3,)
-                torch.tensor([0.05] * 3),  # g: projected gravity (3,)
-                torch.tensor([0.0] * 3),   # c: commands (3,)
-                torch.tensor([0.01] * 10), # p: joint positions (10,)
-                torch.tensor([1.5] * 10),  # p_dot: joint velocities (10,)
-                torch.tensor([0.0] * 10),  # a: last actions (10,)
-                torch.tensor([0.0] * 2),  # foot_contact_state: foot_contact_state (2,)
-                torch.tensor([0.0] * 1), # estimated_height: estimated_height (1,)
-                torch.tensor([0.1] * 209)  # height_data: height scanner (209,)
+                torch.tensor([0.1] * 3, device=sim.device),    # v: base linear velocity (3,)
+                torch.tensor([0.2] * 3, device=sim.device),    # w: base angular velocity (3,)
+                torch.tensor([0.05] * 3, device=sim.device),   # g: projected gravity (3,)
+                torch.tensor([0.0] * 3, device=sim.device),    # c: commands (3,)
+                torch.tensor([0.01] * 10, device=sim.device),  # p: joint positions (10,)
+                torch.tensor([1.5] * 10, device=sim.device),   # p_dot: joint velocities (10,)
+                torch.tensor([0.0] * 10, device=sim.device),   # a: last actions (10,)
+                torch.tensor([0.0] * 2, device=sim.device),    # foot_contact_state: foot_contact_state (2,)
+                torch.tensor([0.0] * 1, device=sim.device),    # estimated_height: estimated_height (1,)
+                torch.tensor([0.1] * 220, device=sim.device)   # height_data: height scanner (220,)
             ])
         )
     )
@@ -269,20 +269,36 @@ class LegPlanarWalkEnvCfg(DirectRLEnvCfg):
     #* reward configuration
     #! encourage reward 
     base_height_target = 0.74
-    lin_vel_reward_scale = 1.0
-    yaw_rate_reward_scale = 1.5
-    base_height_reward_scale = 0.5
-    flat_orientation_reward_scale = 0.5
-    joint_regularization_reward_scale = 0.2
-    is_alive_reward_scale = 0.7
+    lin_vel_reward_scale = 15.0
+    yaw_rate_reward_scale = 10.0
+    is_alive_reward_scale = 10.0
+    joint_regularization_reward_scale = 7.0
+    base_height_reward_scale = 5.0
+    flat_orientation_reward_scale = 5.0
+    
+    
 
     #! penalty reward
     first_order_action_rate_reward_scale = -1e-3
     second_order_action_rate_reward_scale = -1e-4
     energy_consumption_reward_scale = -2.5e-7
-    undesired_contacts_reward_scale = -3e-3
+    undesired_contacts_reward_scale = -10.0
     applied_torque_reward_scale = -1e-4
     applied_torque_rate_reward_scale = -1e-7
 
     #! terminated penalty reward
-    terminated_penalty_reward_scale = -10.0
+    terminated_penalty_reward_scale = -100.0
+
+@configclass
+class LegPlanarWalkPlayEnvCfg(LegPlanarWalkEnvCfg):
+
+    def __post_init__(self):
+        super().__post_init__() #type: ignore
+        self.observation_noise_model = None
+        self.events.push_robot = None #type: ignore
+        self.commands = None
+
+        # self.sim.use_gpu_pipeline = False
+        # self.sim.device = "cpu"
+        # self.sim.use_fabric = False
+
