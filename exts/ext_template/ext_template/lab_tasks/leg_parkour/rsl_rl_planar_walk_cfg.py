@@ -9,7 +9,7 @@ from omni.isaac.lab_tasks.utils.wrappers.rsl_rl import (
 @configclass
 class RslRlPpoEncoderActorCriticCfg(RslRlPpoActorCriticCfg):
     class_name="EncoderActorCritic"
-    init_noise_std=0.2
+    init_noise_std=0.7
     actor_hidden_dims=[256, 256, 256]
     critic_hidden_dims=[256, 256, 256]
     activation="celu"
@@ -32,10 +32,14 @@ class RslRlPpoEncoderActorCriticCfg(RslRlPpoActorCriticCfg):
 @configclass
 class LegPlanarWalkPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 24
-    max_iterations = 3000
+    max_iterations = 10000
     save_interval = 50
     experiment_name = "leg_planar_walk"
     empirical_normalization = False
+
+    # resume = True
+    # load_checkpoint = "model_3200.pt"
+    # load_run = "2024-09-25_17-14-00"
 
     policy = RslRlPpoEncoderActorCriticCfg()
 

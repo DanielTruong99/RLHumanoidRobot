@@ -78,5 +78,5 @@ def plot_joint_positions():
 
 if __name__ == "__main__":
     # plot_base_velocity()
-    plot_dof_torque()
-    # plot_joint_positions()
+    # plot_dof_torque()
+    plot_joint_positions()

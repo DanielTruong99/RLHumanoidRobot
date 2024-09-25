@@ -24,7 +24,7 @@ LEGPARKOUR_CFG = ArticulationCfg(
         ),
     ),
     init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.0, 0.0, 0.93),
+        pos=(0.0, 0.0, 0.97),
         joint_pos={
             'R_hip_joint': 0.0,
             'R_hip2_joint': 0.0,

@@ -82,8 +82,8 @@ def main():
 
     #! custom the configuration for play
     # agent_cfg.resume = True
-    # agent_cfg.load_run = '2024-09-25_00-59-28'
-    # agent_cfg.load_checkpoint = 'model_21700.pt'
+    # agent_cfg.load_run = '2024-09-25_15-25-46'
+    # agent_cfg.load_checkpoint = 'model_3850.pt'
 
     # create isaac environment
     env = gym.make(args_cli.task, cfg=env_cfg)
@@ -125,7 +125,7 @@ def main():
 
     policy_counter = 0
     policy_step_dt = env.unwrapped.step_dt
-    stop_state_log_s = 10.0
+    stop_state_log_s = 5.0
     # stop_state_log = env.env.max_episode_length
     stop_state_log = int(stop_state_log_s / policy_step_dt)
 
@@ -139,38 +139,38 @@ def main():
             # env stepping
             obs, _, _, _ = env.step(actions)
 
-            env.unwrapped._commands[:, 0] = 0.9
+            env.unwrapped._commands[:, 0] = 0.5
             env.unwrapped._commands[:, 1] = 0.0
-            env.unwrapped._commands[:, 2] = 0.0
+            env.unwrapped._commands[:, 2] = -0.0
             # obs[:, 9] = 1.0
             # obs[:, 10] = 0.0
             # obs[:, 11] = 0.0
 
             policy_counter += 1
 
-            # if policy_counter < stop_state_log:
-            #     data_frame = {
-            #         'time_step': policy_counter*policy_step_dt,
-            #         'c_x': obs[:, 9].item(),
-            #         'c_y': obs[:, 10].item(),
-            #         'c_z': obs[:, 11].item(),
-            #         'base_x': env.env.scene["robot"].data.root_pos_w[0, 0].item(),
-            #         'base_y': env.env.scene["robot"].data.root_pos_w[0, 1].item(),
-            #         'base_z': env.env.scene["robot"].data.root_pos_w[0, 2].item(),
-            #         'base_vx': env.env.scene["robot"].data.root_lin_vel_b[0, 0].item(),
-            #         'base_vy': env.env.scene["robot"].data.root_lin_vel_b[0, 1].item(),
-            #         'base_vz': env.env.scene["robot"].data.root_lin_vel_b[0, 2].item(),
-            #         'base_wx': env.env.scene["robot"].data.root_ang_vel_b[0, 0].item(),
-            #         'base_wy': env.env.scene["robot"].data.root_ang_vel_b[0, 1].item(),
-            #         'base_wz': env.env.scene["robot"].data.root_ang_vel_b[0, 2].item(),
-            #         **{'pos_' + key : env.env.scene["robot"].data.joint_pos[0, index].item() for index, key in enumerate(DOF_NAMES)},
-            #         **{'vel_' + key : env.env.scene["robot"].data.joint_vel[0, index].item() for index, key in enumerate(DOF_NAMES)},
-            #         **{'torque_' + key : env.env.scene["robot"].data.applied_torque[0, index].item() for index, key in enumerate(DOF_NAMES)},
-            #     }
+            if policy_counter < stop_state_log:
+                data_frame = {
+                    'time_step': policy_counter*policy_step_dt,
+                    'c_x': obs[:, 9].item(),
+                    'c_y': obs[:, 10].item(),
+                    'c_z': obs[:, 11].item(),
+                    'base_x': env.env.scene["robot"].data.root_pos_w[0, 0].item(),
+                    'base_y': env.env.scene["robot"].data.root_pos_w[0, 1].item(),
+                    'base_z': env.env.scene["robot"].data.root_pos_w[0, 2].item(),
+                    'base_vx': env.env.scene["robot"].data.root_lin_vel_b[0, 0].item(),
+                    'base_vy': env.env.scene["robot"].data.root_lin_vel_b[0, 1].item(),
+                    'base_vz': env.env.scene["robot"].data.root_lin_vel_b[0, 2].item(),
+                    'base_wx': env.env.scene["robot"].data.root_ang_vel_b[0, 0].item(),
+                    'base_wy': env.env.scene["robot"].data.root_ang_vel_b[0, 1].item(),
+                    'base_wz': env.env.scene["robot"].data.root_ang_vel_b[0, 2].item(),
+                    **{'pos_' + key : env.env.scene["robot"].data.joint_pos[0, env.env.scene["robot"].find_joints(key)[0]].item() for index, key in enumerate(DOF_NAMES)},
+                    **{'vel_' + key : env.env.scene["robot"].data.joint_vel[0, env.env.scene["robot"].find_joints(key)[0]].item() for index, key in enumerate(DOF_NAMES)},
+                    **{'torque_' + key : env.env.scene["robot"].data.applied_torque[0, index].item() for index, key in enumerate(DOF_NAMES)},
+                }
 
-            #     data_logger.log_states(data_frame)
-            # else:
-            #     data_logger.save_log('analysis/data/state_log.csv')
+                data_logger.log_states(data_frame)
+            else:
+                data_logger.save_log('analysis/data/state_log.csv')
                 
 
 

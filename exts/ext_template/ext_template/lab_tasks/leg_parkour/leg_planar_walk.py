@@ -63,7 +63,8 @@ class LegPlanarWalkEnv(DirectRLEnv):
                 "is_alive",
                 "applied_torque",
                 "applied_torque_rate",
-                "terminated_penalty"
+                "terminated_penalty",
+                "joint_pos_limit"
             ]
         }
 
@@ -271,18 +272,18 @@ class LegPlanarWalkEnv(DirectRLEnv):
         net_contact_forces = self._contact_sensor.data.net_forces_w_history
         died = torch.any(torch.max(torch.norm(net_contact_forces[:, :, self._base_id], dim=-1), dim=1)[0] > 1.0, dim=1) # type: ignore
 
-        #* check if the base's pitch and roll eceeded the limits
-        is_exceed_gx = torch.abs(self._robot.data.projected_gravity_b[:, 0]) > 0.85
-        is_exceed_gy = torch.abs(self._robot.data.projected_gravity_b[:, 1]) > 0.85
-        # died |=  is_exceed_gx; died |= is_exceed_gy
+        # #* check if the base's pitch and roll eceeded the limits
+        # is_exceed_gx = torch.abs(self._robot.data.projected_gravity_b[:, 0]) > 0.85
+        # is_exceed_gy = torch.abs(self._robot.data.projected_gravity_b[:, 1]) > 0.85
+        # # died |=  is_exceed_gx; died |= is_exceed_gy
 
-        #* check if the base's linear velocity exceeded the limit
-        is_exceed_v = torch.norm(self._robot.data.root_lin_vel_b[:, :2], dim=1) > 11.0
-        # died |= is_exceed_v
+        # #* check if the base's linear velocity exceeded the limit
+        # is_exceed_v = torch.norm(self._robot.data.root_lin_vel_b[:, :2], dim=1) > 11.0
+        # # died |= is_exceed_v
 
-        #* check if the base's angular velocity exceeded the limit
-        is_exceed_w = torch.norm(self._robot.data.root_ang_vel_b, dim=1) > 7.0
-        # died |= is_exceed_w
+        # #* check if the base's angular velocity exceeded the limit
+        # is_exceed_w = torch.norm(self._robot.data.root_ang_vel_b, dim=1) > 7.0
+        # # died |= is_exceed_w
 
         return died, time_out
 
@@ -306,7 +307,8 @@ class LegPlanarWalkEnv(DirectRLEnv):
             is_alive,
             applied_torque,
             applied_torque_rate,
-            terminated_penalty
+            terminated_penalty,
+            joint_pos_limit
         ) = compute_rewards(
             commands=self._commands,
             root_lin_vel_b=self._robot.data.root_lin_vel_b,
@@ -322,6 +324,7 @@ class LegPlanarWalkEnv(DirectRLEnv):
             applied_torque=self._robot.data.applied_torque,
             joint_vel=self._robot.data.joint_vel,
             joint_pos=self._robot.data.joint_pos,
+            soft_joint_pos_limits=self._robot.data.soft_joint_pos_limits,
             R_hip_joint_index=self._R_hip_joint_index,
             L_hip_joint_index=self._L_hip_joint_index,
             R_hip2_joint_index=self._R_hip2_joint_index,
@@ -348,6 +351,7 @@ class LegPlanarWalkEnv(DirectRLEnv):
             "applied_torque": applied_torque * self.cfg.applied_torque_reward_scale * self.step_dt,
             "applied_torque_rate": applied_torque_rate * self.cfg.applied_torque_rate_reward_scale * self.step_dt,
             "terminated_penalty": terminated_penalty * self.cfg.terminated_penalty_reward_scale * self.step_dt,
+            "joint_pos_limit": joint_pos_limit * self.cfg.joint_pos_limit_reward_scale * self.step_dt
         }
         reward = torch.sum(torch.stack(list(rewards.values())), dim=0)
         
@@ -375,6 +379,7 @@ def compute_rewards(
     applied_torque: torch.Tensor,
     joint_vel: torch.Tensor,
     joint_pos: torch.Tensor,
+    soft_joint_pos_limits: torch.Tensor,
     R_hip_joint_index: list[int],
     L_hip_joint_index: list[int],
     R_hip2_joint_index: list[int],
@@ -438,6 +443,15 @@ def compute_rewards(
     #* terminated penalty
     terminated_penalty = reset_terminated.float()
 
+    #* joint position limit
+    out_of_limits = -(
+        joint_pos - soft_joint_pos_limits[:, :, 0]
+    ).clip(max=0.0)
+    out_of_limits += (
+        joint_pos - soft_joint_pos_limits[:, :, 1]
+    ).clip(min=0.0)
+    joint_pos_limit =  torch.sum(out_of_limits, dim=1)
+
     return (
         lin_vel_error_mapped,
         yaw_rate_error_mapped,
@@ -451,7 +465,8 @@ def compute_rewards(
         is_alive,
         applied_torque_penalty,
         applied_torque_rate,
-        terminated_penalty
+        terminated_penalty,
+        joint_pos_limit
     )
 
     

@@ -70,12 +70,12 @@ class EventCfg:
                 'R_hip_joint': (-0.1, 0.1),
                 'R_hip2_joint': (-0.2, 0.2),
                 'R_thigh_joint': (-0.2, 0.2),
-                'R_calf_joint': (0.0, 0.2),
+                'R_calf_joint': (0.0, 0.5),
                 'R_toe_joint': (-0.3, 0.3),
                 'L_hip_joint': (-0.1, 0.1),
                 'L_hip2_joint': (-0.2, 0.2),
                 'L_thigh_joint': (-0.2, 0.2),
-                'L_calf_joint': (0.0, 0.2),
+                'L_calf_joint': (0.0, 0.5),
                 'L_toe_joint': (-0.3, 0.3),
             },
             "velocity_range": {
@@ -207,7 +207,7 @@ class LegPlanarWalkEnvCfg(DirectRLEnvCfg):
     )    
     terrain = TerrainImporterCfg(
         prim_path="/World/ground",
-        terrain_type="generator",
+        terrain_type="plane",
         terrain_generator=PARKOUR_TERRAINS_CFG,
         max_init_terrain_level=9,
         collision_group=-1,
@@ -268,13 +268,14 @@ class LegPlanarWalkEnvCfg(DirectRLEnvCfg):
 
     #* reward configuration
     #! encourage reward 
-    base_height_target = 0.74
-    lin_vel_reward_scale = 15.0
-    yaw_rate_reward_scale = 10.0
-    is_alive_reward_scale = 10.0
-    joint_regularization_reward_scale = 7.0
-    base_height_reward_scale = 5.0
+    base_height_target = 0.78
+    lin_vel_reward_scale = 10.0
+    yaw_rate_reward_scale = 5.0
+    is_alive_reward_scale = 0.0
     flat_orientation_reward_scale = 5.0
+    base_height_reward_scale = 7.0
+    joint_regularization_reward_scale = 9.0
+    
     
     
 
@@ -285,6 +286,7 @@ class LegPlanarWalkEnvCfg(DirectRLEnvCfg):
     undesired_contacts_reward_scale = -10.0
     applied_torque_reward_scale = -1e-4
     applied_torque_rate_reward_scale = -1e-7
+    joint_pos_limit_reward_scale = -10.0
 
     #! terminated penalty reward
     terminated_penalty_reward_scale = -100.0
@@ -298,6 +300,9 @@ class LegPlanarWalkPlayEnvCfg(LegPlanarWalkEnvCfg):
         self.events.push_robot = None #type: ignore
         self.commands = None
 
+        self.terrain.terrain_type = "plane"
+
+        self.episode_length_s = 20.0
         # self.sim.use_gpu_pipeline = False
         # self.sim.device = "cpu"
         # self.sim.use_fabric = False
