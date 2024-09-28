@@ -131,6 +131,10 @@ class LegPlanarWalkEnv(DirectRLEnv):
         if len(resample_env_ids) > 0:
             self._time_left[resample_env_ids] = self._time_left[resample_env_ids].uniform_(*self.cfg.commands.resampling_time_range)
             self._resample(resample_env_ids)
+        self._post_process_commands()
+        
+    def _post_process_commands(self):
+        pass
 
     def _resample(self, env_ids):
         """Resample the commands if the time left is less than 0."""
@@ -168,6 +172,7 @@ class LegPlanarWalkEnv(DirectRLEnv):
         self.cfg.terrain.num_envs = self.scene.cfg.num_envs
         self.cfg.terrain.env_spacing = self.scene.cfg.env_spacing
         self._terrain = self.cfg.terrain.class_type(self.cfg.terrain)
+        self.scene._terrain = self._terrain
 
         #* clone, filter, and replicate
         self.scene.clone_environments(copy_from_source=False)
@@ -228,12 +233,20 @@ class LegPlanarWalkEnv(DirectRLEnv):
 
         return {"policy": obs}
 
+    def _compute_curriculum(self, env_ids: torch.Tensor):
+        """Compute the curriculum for the given environment ids."""
+        pass
+
     def _reset_idx(self, env_ids: torch.Tensor | None):
         if env_ids is None or len(env_ids) == self.num_envs:
             env_ids = self._robot._ALL_INDICES  # type: ignore
 
         #* reset the robot
         self._robot.reset(env_ids) #type: ignore
+
+        #* compute the curriculum if enabled
+        if self.cfg.curriculum:
+            self._compute_curriculum(env_ids)
 
         #* reset the scene and noise model
         #* event manager also trigger "reset" event
@@ -247,6 +260,7 @@ class LegPlanarWalkEnv(DirectRLEnv):
         #* reset user buffers
         self._previous_actions[env_ids] = 0.0
         self._previous_actions_2[env_ids] = 0.0
+        self._previous_applied_torque[env_ids] = 0.0
 
         #* sample new commands
         if self.cfg.commands:

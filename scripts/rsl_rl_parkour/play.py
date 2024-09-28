@@ -81,9 +81,9 @@ def main():
     agent_cfg: RslRlOnPolicyRunnerCfg = cli_args.parse_rsl_rl_cfg(args_cli.task, args_cli)
 
     #! custom the configuration for play
-    # agent_cfg.resume = True
-    # agent_cfg.load_run = '2024-09-25_15-25-46'
-    # agent_cfg.load_checkpoint = 'model_3850.pt'
+    agent_cfg.resume = True
+    agent_cfg.load_run = '2024-09-28_02-41-43'
+    agent_cfg.load_checkpoint = 'model_23198.pt'
 
     # create isaac environment
     env = gym.make(args_cli.task, cfg=env_cfg)
@@ -139,7 +139,7 @@ def main():
             # env stepping
             obs, _, _, _ = env.step(actions)
 
-            env.unwrapped._commands[:, 0] = 0.5
+            env.unwrapped._commands[:, 0] = 1.2
             env.unwrapped._commands[:, 1] = 0.0
             env.unwrapped._commands[:, 2] = -0.0
             # obs[:, 9] = 1.0
