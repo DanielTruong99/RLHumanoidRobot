@@ -18,7 +18,7 @@ class RslRlPpoEncoderActorCriticCfg(RslRlPpoActorCriticCfg):
         "type": "gru",
         "num_layers": 1,
         "hidden_size": 256,
-        "input_dim": 45 + 32, # proprioception + latent height
+        "input_dim": 44 + 32, # proprioception + latent height
     }
 
     encoder_cfg: dict = {
@@ -32,14 +32,14 @@ class RslRlPpoEncoderActorCriticCfg(RslRlPpoActorCriticCfg):
 @configclass
 class LegPlanarWalkPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 24
-    max_iterations = 10000
+    max_iterations = 30000
     save_interval = 50
-    experiment_name = "leg_planar_walk"
+    experiment_name = "leg_planar_walk_pd_eliminate_base_orientation_reward"
     empirical_normalization = False
 
-    # resume = True
-    # load_checkpoint = "model_3200.pt"
-    # load_run = "2024-09-25_17-14-00"
+    resume = True
+    load_checkpoint = "model_750.pt"
+    load_run = "2024-09-30_11-20-07"
 
     policy = RslRlPpoEncoderActorCriticCfg()
 

@@ -69,12 +69,12 @@ class EventCfg:
             "position_range": {
                 'R_hip_joint': (-0.1, 0.1),
                 'R_hip2_joint': (-0.2, 0.2),
-                'R_thigh_joint': (-0.2, 0.2),
+                'R_thigh_joint': (-0.5, 0.5),
                 'R_calf_joint': (0.0, 0.5),
                 'R_toe_joint': (-0.3, 0.3),
                 'L_hip_joint': (-0.1, 0.1),
                 'L_hip2_joint': (-0.2, 0.2),
-                'L_thigh_joint': (-0.2, 0.2),
+                'L_thigh_joint': (-0.5, 0.5),
                 'L_calf_joint': (0.0, 0.5),
                 'L_toe_joint': (-0.3, 0.3),
             },
@@ -104,7 +104,7 @@ class EventCfg:
 class CommandCfg:
     resampling_time_range = (5.0, 5.0)
     ranges_lin_vel_x = (0.0, 1.5)
-    ranges_lin_vel_y = (-0.1, 0.1)
+    ranges_lin_vel_y = (-0.0, 0.0)
     ranges_ang_vel_z = (-0.5, 0.5)
 
 @configclass
@@ -120,7 +120,7 @@ class LegPlanarWalkEnvCfg(DirectRLEnvCfg):
         7. height scanner configuration
         8. observation noise model configuration
     """
-    curriculum = True
+    curriculum = None
 
     #* command configuration
     commands = CommandCfg()
@@ -133,7 +133,7 @@ class LegPlanarWalkEnvCfg(DirectRLEnvCfg):
     decimation = 2
     action_scale = 1.0
     num_actions = 10
-    num_observations = 3 + 3 + 3 + 3 + 10 + 10 + 10 + 2 + 1 + 220 #! NEED TO BE CHANGED
+    num_observations = 3 + 3 + 3 + 3 + 10 + 10 + 10 + 2 + 220 #! NEED TO BE CHANGED
     num_states = 0
 
     #* simulation
@@ -250,7 +250,6 @@ class LegPlanarWalkEnvCfg(DirectRLEnvCfg):
                 torch.tensor([-1.5] * 10, device=sim.device),  # p_dot: joint velocities (10,)
                 torch.tensor([0.0] * 10, device=sim.device),   # a: last actions (10,)
                 torch.tensor([0.0] * 2, device=sim.device),    # foot_contact_state: foot_contact_state (2,)
-                torch.tensor([0.0] * 1, device=sim.device),    # estimated_height: estimated_height (1,)
                 torch.tensor([-0.1] * 220, device=sim.device)  # height_data: height scanner (220,)
             ]), 
             n_max=torch.cat([
@@ -262,7 +261,6 @@ class LegPlanarWalkEnvCfg(DirectRLEnvCfg):
                 torch.tensor([1.5] * 10, device=sim.device),   # p_dot: joint velocities (10,)
                 torch.tensor([0.0] * 10, device=sim.device),   # a: last actions (10,)
                 torch.tensor([0.0] * 2, device=sim.device),    # foot_contact_state: foot_contact_state (2,)
-                torch.tensor([0.0] * 1, device=sim.device),    # estimated_height: estimated_height (1,)
                 torch.tensor([0.1] * 220, device=sim.device)   # height_data: height scanner (220,)
             ])
         )
@@ -275,7 +273,7 @@ class LegPlanarWalkEnvCfg(DirectRLEnvCfg):
     yaw_rate_reward_scale = 5.0
     is_alive_reward_scale = 0.0
     flat_orientation_reward_scale = 5.0
-    base_height_reward_scale = 7.0
+    base_height_reward_scale = 0.0
     joint_regularization_reward_scale = 9.0
     
     
