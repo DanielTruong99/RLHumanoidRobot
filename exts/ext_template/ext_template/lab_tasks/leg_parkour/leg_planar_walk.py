@@ -3,6 +3,7 @@ from __future__ import annotations
 import torch
 
 import omni.isaac.lab.sim as sim_utils
+import omni.isaac.lab.utils.math as math_utils
 from omni.isaac.lab.envs.direct_rl_env import DirectRLEnv
 from omni.isaac.lab.assets.articulation import Articulation
 from omni.isaac.lab.sensors import ContactSensor, RayCaster
@@ -20,6 +21,12 @@ class LegPlanarWalkEnv(DirectRLEnv):
             #! 2. _configure_gym_env_spaces()
         """
         super().__init__(cfg, render_mode, **kwargs)
+
+        #* adjust the joint limit of the thigh joint [-1.7, 0] -> [-1.7, 0.78]
+        thigh_joint_ids = self._robot.find_joints(".*_thigh_joint")[0]
+        limits = torch.zeros_like(self._robot.data.joint_limits[:, thigh_joint_ids, :])
+        limits[:, :, 0] = -1.7; limits[:, :, 1] = 0.78
+        self._robot.write_joint_limits_to_sim(limits, thigh_joint_ids)
 
         #! super.init() has created the self.actions
         self._previous_actions = torch.zeros(self.num_envs, self.cfg.num_actions, device=self.device)
@@ -172,7 +179,7 @@ class LegPlanarWalkEnv(DirectRLEnv):
         self.cfg.terrain.num_envs = self.scene.cfg.num_envs
         self.cfg.terrain.env_spacing = self.scene.cfg.env_spacing
         self._terrain = self.cfg.terrain.class_type(self.cfg.terrain)
-        self.scene._terrain = self._terrain
+        self.scene._terrain = self._terrain # type: ignore
 
         #* clone, filter, and replicate
         self.scene.clone_environments(copy_from_source=False)
@@ -190,7 +197,8 @@ class LegPlanarWalkEnv(DirectRLEnv):
         self._robot.set_joint_position_target(self._processed_actions)
 
     def _get_observations(self) -> torch.Dict[str, torch.Tensor | torch.Dict[str, torch.Tensor]]:
-        """Get the observations from the environment.
+        """Get the observations from the environment. 3 + 3 + 3 + 3 + 3 + 10 + 10 + 10 + 2 + 209 = 246
+            a: base linear acceleration (, 3)
             v: base linear velocity (, 3)
             w: base angular velocity (, 3)
             g: projected gravity (, 3)
@@ -199,24 +207,30 @@ class LegPlanarWalkEnv(DirectRLEnv):
             p_dot: joint velocities (, 10)
             a: last actions (, 10)
             foot_contact_state: binary foot contact state (, 2)
-            estimated_height: estimated height from the height scanner (, 1)
             height_data: height data from the height scanner (, 209)
             #//clock_phase: (, 3)
         """
+        #* cache the previous actions
         self._previous_actions_2 = self._previous_actions.clone()
         self._previous_actions = self.actions.clone()
         self._previous_applied_torque = self._robot.data.applied_torque.clone()
 
+        #* read hegith data from the height scanner
         height_data = (
-            self._height_scanner.data.pos_w[:, 2].unsqueeze(1) - self._height_scanner.data.ray_hits_w[..., 2]
+            self._height_scanner.data.pos_w[:, 2].unsqueeze(1) - self._height_scanner.data.ray_hits_w[..., 2] - 0.5
         ).clip(-1.0, 1.0)
-        estimated_height = torch.mean(height_data, dim=1).unsqueeze(1)
 
+        #* binary contact state
         foot_contact_force = self._contact_sensor.data.net_forces_w[:, self._feet_ids, 2] # type: ignore
         foot_contact_state = torch.gt(foot_contact_force, 0.0).float()
 
+        #* base linear acceleration
+        base_lin_acc_b = math_utils.quat_rotate_inverse(self._robot.data.root_quat_w, self._robot.data.body_lin_acc_w[:, self._base_id, :])
+        
+
         obs = torch.cat(
             (
+                base_lin_acc_b,
                 self._robot.data.root_lin_vel_b,
                 self._robot.data.root_ang_vel_b,
                 self._robot.data.projected_gravity_b,
@@ -225,7 +239,6 @@ class LegPlanarWalkEnv(DirectRLEnv):
                 self._robot.data.joint_vel,
                 self.actions,
                 foot_contact_state,
-                estimated_height,
                 height_data
             ),
             dim=-1,

@@ -18,12 +18,6 @@ class LegLeapEnv(LegPlanarWalkEnv):
     def __init__(self, cfg, render_mode: str | None = None, **kwargs):
         super().__init__(cfg, render_mode, **kwargs)
 
-        #* adjust the joint limit of the thigh joint [-1.7, 0] -> [-1.7, 0.78]
-        thigh_joint_ids = self._robot.find_joints(".*_thigh_joint")[0]
-        limits = torch.zeros_like(self._robot.data.joint_limits[:, thigh_joint_ids, :])
-        limits[:, :, 0] = -1.7; limits[:, :, 1] = 0.78
-        self._robot.write_joint_limits_to_sim(limits, thigh_joint_ids)
-
         #* add heading target to the command
         self._heading_target = torch.zeros(self.num_envs, device=self.device)
 

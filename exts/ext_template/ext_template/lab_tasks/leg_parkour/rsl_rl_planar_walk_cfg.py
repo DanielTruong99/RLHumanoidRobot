@@ -12,7 +12,7 @@ class RslRlPpoEncoderActorCriticCfg(RslRlPpoActorCriticCfg):
     init_noise_std=0.7
     actor_hidden_dims=[256, 256, 256]
     critic_hidden_dims=[256, 256, 256]
-    activation="celu"
+    activation="elu"
 
     memory_cfg: dict = {
         "type": "gru",
@@ -24,7 +24,7 @@ class RslRlPpoEncoderActorCriticCfg(RslRlPpoActorCriticCfg):
     encoder_cfg: dict = {
         "input_dim": 220,
         "hidden_dims": [128, 64],
-        "activation": "celu",
+        "activation": "elu",
         "output_dim": 32,
     }
 
@@ -32,9 +32,9 @@ class RslRlPpoEncoderActorCriticCfg(RslRlPpoActorCriticCfg):
 @configclass
 class LegPlanarWalkPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 24
-    max_iterations = 10000
+    max_iterations = 15000
     save_interval = 50
-    experiment_name = "leg_planar_walk"
+    experiment_name = "leg_planar_walk_03"
     empirical_normalization = False
 
     # resume = True

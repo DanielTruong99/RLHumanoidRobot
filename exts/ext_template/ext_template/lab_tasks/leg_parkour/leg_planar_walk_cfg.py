@@ -69,12 +69,12 @@ class EventCfg:
             "position_range": {
                 'R_hip_joint': (-0.1, 0.1),
                 'R_hip2_joint': (-0.2, 0.2),
-                'R_thigh_joint': (-0.2, 0.2),
+                'R_thigh_joint': (-0.5, 0.5),
                 'R_calf_joint': (0.0, 0.5),
                 'R_toe_joint': (-0.3, 0.3),
                 'L_hip_joint': (-0.1, 0.1),
                 'L_hip2_joint': (-0.2, 0.2),
-                'L_thigh_joint': (-0.2, 0.2),
+                'L_thigh_joint': (-0.5, 0.5),
                 'L_calf_joint': (0.0, 0.5),
                 'L_toe_joint': (-0.3, 0.3),
             },
@@ -104,7 +104,7 @@ class EventCfg:
 class CommandCfg:
     resampling_time_range = (5.0, 5.0)
     ranges_lin_vel_x = (0.0, 1.5)
-    ranges_lin_vel_y = (-0.1, 0.1)
+    ranges_lin_vel_y = (-0.0, 0.0)
     ranges_ang_vel_z = (-0.5, 0.5)
 
 @configclass
@@ -120,7 +120,7 @@ class LegPlanarWalkEnvCfg(DirectRLEnvCfg):
         7. height scanner configuration
         8. observation noise model configuration
     """
-    curriculum = True
+    curriculum = None
 
     #* command configuration
     commands = CommandCfg()
