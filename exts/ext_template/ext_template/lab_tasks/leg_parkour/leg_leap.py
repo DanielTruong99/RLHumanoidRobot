@@ -52,7 +52,7 @@ class LegLeapEnv(LegPlanarWalkEnv):
         self._commands[env_ids, 0] = r.uniform_(*self.cfg.commands.ranges_lin_vel_x)
 
         #* linear velocity - y direction
-        self._commands[env_ids, 1] = r.uniform_(*self.cfg.commands.ranges_lin_vel_y)
+        self._commands[env_ids, 1] = 0.0
 
 
     def _post_process_commands(self):

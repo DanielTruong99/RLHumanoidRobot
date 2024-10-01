@@ -139,7 +139,7 @@ def main():
             # env stepping
             obs, _, _, _ = env.step(actions)
 
-            env.unwrapped._commands[:, 0] = 1.2
+            env.unwrapped._commands[:, 0] = 0.9
             env.unwrapped._commands[:, 1] = 0.0
             env.unwrapped._commands[:, 2] = -0.0
             # obs[:, 9] = 1.0
@@ -151,9 +151,9 @@ def main():
             if policy_counter < stop_state_log:
                 data_frame = {
                     'time_step': policy_counter*policy_step_dt,
-                    'c_x': obs[:, 9].item(),
-                    'c_y': obs[:, 10].item(),
-                    'c_z': obs[:, 11].item(),
+                    'c_x': env.unwrapped._commands[:, 0].item(),
+                    'c_y': env.unwrapped._commands[:, 1].item(),
+                    'c_z': env.unwrapped._commands[:, 2].item(),
                     'base_x': env.env.scene["robot"].data.root_pos_w[0, 0].item(),
                     'base_y': env.env.scene["robot"].data.root_pos_w[0, 1].item(),
                     'base_z': env.env.scene["robot"].data.root_pos_w[0, 2].item(),

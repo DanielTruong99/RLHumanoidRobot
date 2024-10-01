@@ -27,7 +27,7 @@ PARKOUR_TERRAINS_CFG = TerrainGeneratorCfg(
     use_cache=False,
     sub_terrains={
         "hurdle_noise": terrain.HurdleNoiseTerrainCfg(
-            box_height_range=(0.2, 0.5), platform_width=(0.1, 10.0), box_position=(1.5, 0.0),
+            box_height_range=(0.2, 0.5), platform_width=(0.1, 10.0), box_position=(0.7, 0.0),
             random_uniform_terrain_cfg=terrain_gen.HfRandomUniformTerrainCfg(
                 proportion=0.2, noise_range=(0.00, 0.00), noise_step=0.01, border_width=0.0,
                 size=(10.0, 10.0),
@@ -37,41 +37,6 @@ PARKOUR_TERRAINS_CFG = TerrainGeneratorCfg(
     curriculum=True,
 )    
 
-@configclass
-class LeapEventsCfg(EventCfg):
-    reset_robot_joints = EventTermCfg(
-        func=custom_mdp.reset_joints_by_offset,
-        mode="reset",
-        params={
-            "position_range": {
-                'R_hip_joint': (-0.1, 0.1),
-                'R_hip2_joint': (-0.2, 0.2),
-                'R_thigh_joint': (-0.5, 0.5),
-                'R_calf_joint': (0.0, 0.5),
-                'R_toe_joint': (-0.3, 0.3),
-                'L_hip_joint': (-0.1, 0.1),
-                'L_hip2_joint': (-0.2, 0.2),
-                'L_thigh_joint': (-0.5, 0.5),
-                'L_calf_joint': (0.0, 0.5),
-                'L_toe_joint': (-0.3, 0.3),
-            },
-            "velocity_range": {
-                'R_hip_joint': (-0.1, 0.1),
-                'R_hip2_joint': (-0.1, 0.1),
-                'R_thigh_joint': (-0.1, 0.1),
-                'R_calf_joint': (-0.1, 0.1),
-                'R_toe_joint': (-0.1, 0.1),
-                'L_hip_joint': (-0.1, 0.1),
-                'L_hip2_joint': (-0.1, 0.1),
-                'L_thigh_joint': (-0.1, 0.1),
-                'L_calf_joint': (-0.1, 0.1),
-                'L_toe_joint': (-0.1, 0.1),
-            }
-        },
-    )
-
-    push_robot = None
-
 
 @configclass
 class CommandCfg:
@@ -79,7 +44,7 @@ class CommandCfg:
     ranges_lin_vel_x = (0.0, 1.5)
     ranges_lin_vel_y = (-0.0, 0.0)
     ranges_ang_vel_z = (-0.5, 0.5)
-    heading_control_stiffness = 0.15 #* added heading stiffness
+    heading_control_stiffness = 0.3 #* added heading stiffness
 
 @configclass
 class LegLeapEnvCfg(LegPlanarWalkEnvCfg):
@@ -97,13 +62,10 @@ class LegLeapEnvCfg(LegPlanarWalkEnvCfg):
     #* environment configurations
     episode_length_s = 5.0
 
-    #* event configurations
-    events = LeapEventsCfg()
-
     #* command configurations
     commands = CommandCfg()
 
-
+    #* terrain configurations
     terrain = TerrainImporterCfg(
         prim_path="/World/ground",
         terrain_type="generator",
@@ -126,6 +88,11 @@ class LegLeapEnvCfg(LegPlanarWalkEnvCfg):
 
     #* scene configurations
     scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=4096, env_spacing=5.0, replicate_physics=True)
+
+    def __post_init__(self):
+        super().__post_init__() #type: ignore
+        self.events.push_robot = None #type: ignore
+    
 
 
 @configclass

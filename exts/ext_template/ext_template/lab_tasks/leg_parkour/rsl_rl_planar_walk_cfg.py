@@ -37,9 +37,9 @@ class LegPlanarWalkPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     experiment_name = "leg_planar_walk_03"
     empirical_normalization = False
 
-    # resume = True
-    # load_checkpoint = "model_3200.pt"
-    # load_run = "2024-09-25_17-14-00"
+    resume = True
+    load_checkpoint = "model_550.pt"
+    load_run = "2024-10-01_12-06-44"
 
     policy = RslRlPpoEncoderActorCriticCfg()
 

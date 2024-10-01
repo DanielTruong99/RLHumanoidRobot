@@ -279,8 +279,8 @@ class LegPlanarWalkEnvCfg(DirectRLEnvCfg):
     lin_vel_reward_scale = 15.0
     yaw_rate_reward_scale = 10.0
     is_alive_reward_scale = 0.0
-    flat_orientation_reward_scale = 5.0
-    base_height_reward_scale = 5.0
+    flat_orientation_reward_scale = 7.0
+    base_height_reward_scale = 0.0
     joint_regularization_reward_scale = 7.0
     
     
