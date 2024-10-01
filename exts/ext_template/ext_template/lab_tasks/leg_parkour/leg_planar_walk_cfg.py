@@ -133,7 +133,7 @@ class LegPlanarWalkEnvCfg(DirectRLEnvCfg):
     decimation = 2
     action_scale = 1.0
     num_actions = 10
-    num_observations = 3 + 3 + 3 + 3 + 10 + 10 + 10 + 2 + 1 + 220 #! NEED TO BE CHANGED
+    num_observations = 3 + 3 + 3 + 3 + 3 + 10 + 10 + 10 + 3 + 14 + 2 + 220 #! NEED TO BE CHANGED
     num_states = 0
 
     #* simulation
@@ -238,45 +238,50 @@ class LegPlanarWalkEnvCfg(DirectRLEnvCfg):
     )
 
     #* observation noise model configuration
-    observation_noise_model = NoiseModelCfg(
-        class_type=CustomNoiseModel,
-        noise_cfg=UNoiseCfg(
-            n_min=torch.cat([
-                torch.tensor([-0.1] * 3, device=sim.device),   # v: base linear velocity (3,)
-                torch.tensor([-0.2] * 3, device=sim.device),   # w: base angular velocity (3,)
-                torch.tensor([-0.05] * 3, device=sim.device),  # g: projected gravity (3,)
-                torch.tensor([0.0] * 3, device=sim.device),    # c: commands (3,)
-                torch.tensor([-0.01] * 10, device=sim.device), # p: joint positions (10,)
-                torch.tensor([-1.5] * 10, device=sim.device),  # p_dot: joint velocities (10,)
-                torch.tensor([0.0] * 10, device=sim.device),   # a: last actions (10,)
-                torch.tensor([0.0] * 2, device=sim.device),    # foot_contact_state: foot_contact_state (2,)
-                torch.tensor([0.0] * 1, device=sim.device),    # estimated_height: estimated_height (1,)
-                torch.tensor([-0.1] * 220, device=sim.device)  # height_data: height scanner (220,)
-            ]), 
-            n_max=torch.cat([
-                torch.tensor([0.1] * 3, device=sim.device),    # v: base linear velocity (3,)
-                torch.tensor([0.2] * 3, device=sim.device),    # w: base angular velocity (3,)
-                torch.tensor([0.05] * 3, device=sim.device),   # g: projected gravity (3,)
-                torch.tensor([0.0] * 3, device=sim.device),    # c: commands (3,)
-                torch.tensor([0.01] * 10, device=sim.device),  # p: joint positions (10,)
-                torch.tensor([1.5] * 10, device=sim.device),   # p_dot: joint velocities (10,)
-                torch.tensor([0.0] * 10, device=sim.device),   # a: last actions (10,)
-                torch.tensor([0.0] * 2, device=sim.device),    # foot_contact_state: foot_contact_state (2,)
-                torch.tensor([0.0] * 1, device=sim.device),    # estimated_height: estimated_height (1,)
-                torch.tensor([0.1] * 220, device=sim.device)   # height_data: height scanner (220,)
-            ])
-        )
-    )
+    # observation_noise_model = NoiseModelCfg(
+    #     class_type=CustomNoiseModel,
+    #     noise_cfg=UNoiseCfg(
+    #         n_min=torch.cat([
+    #             torch.tensor([-0.01] * 3, device=sim.device),   # a: base acceleration velocity (3,)
+    #             torch.tensor([-0.1] * 3, device=sim.device),   # v: base linear velocity (3,)
+    #             torch.tensor([-0.2] * 3, device=sim.device),   # w: base angular velocity (3,)
+    #             torch.tensor([-0.05] * 3, device=sim.device),  # g: projected gravity (3,)
+    #             torch.tensor([0.0] * 3, device=sim.device),    # c: commands (3,)
+    #             torch.tensor([-0.01] * 10, device=sim.device), # p: joint positions (10,)
+    #             torch.tensor([-1.5] * 10, device=sim.device),  # p_dot: joint velocities (10,)
+    #             torch.tensor([0.0] * 10, device=sim.device),   # a: last actions (10,)
+    #             torch.tensor([0.0] * 3, device=sim.device),    # clock_phase: (3,)
+    #             torch.tensor([0.0] * 14, device=sim.device),    # foot state: foot position and orientation (14,)
+    #             torch.tensor([0.0] * 2, device=sim.device),    # foot_contact_state: foot_contact_state (2,)
+    #             torch.tensor([-0.1] * 220, device=sim.device)  # height_data: height scanner (220,)
+    #         ]), 
+    #         n_max=torch.cat([
+    #             torch.tensor([0.01] * 3, device=sim.device),    # a: base acceleration velocity (3,)
+    #             torch.tensor([0.1] * 3, device=sim.device),    # v: base linear velocity (3,)
+    #             torch.tensor([0.2] * 3, device=sim.device),    # w: base angular velocity (3,)
+    #             torch.tensor([0.05] * 3, device=sim.device),   # g: projected gravity (3,)
+    #             torch.tensor([0.0] * 3, device=sim.device),    # c: commands (3,)
+    #             torch.tensor([0.01] * 10, device=sim.device),  # p: joint positions (10,)
+    #             torch.tensor([1.5] * 10, device=sim.device),   # p_dot: joint velocities (10,)
+    #             torch.tensor([0.0] * 10, device=sim.device),   # a: last actions (10,)
+    #             torch.tensor([0.0] * 3, device=sim.device),    # clock_phase: (3,)
+    #             torch.tensor([0.0] * 14, device=sim.device),    # foot state: foot position and orientation (14,)
+    #             torch.tensor([0.0] * 2, device=sim.device),    # foot_contact_state: foot_contact_state (2,)
+    #             torch.tensor([0.1] * 220, device=sim.device)   # height_data: height scanner (220,)
+    #         ])
+    #     )
+    # )
+    observation_noise_model = None
 
     #* reward configuration
     #! encourage reward 
-    base_height_target = 0.78
-    lin_vel_reward_scale = 10.0
-    yaw_rate_reward_scale = 5.0
+    base_height_target = 0.81
+    lin_vel_reward_scale = 15.0
+    yaw_rate_reward_scale = 10.0
     is_alive_reward_scale = 0.0
     flat_orientation_reward_scale = 5.0
-    base_height_reward_scale = 7.0
-    joint_regularization_reward_scale = 9.0
+    base_height_reward_scale = 5.0
+    joint_regularization_reward_scale = 7.0
     
     
     
@@ -284,7 +289,7 @@ class LegPlanarWalkEnvCfg(DirectRLEnvCfg):
     #! penalty reward
     first_order_action_rate_reward_scale = -1e-3
     second_order_action_rate_reward_scale = -1e-4
-    energy_consumption_reward_scale = -2.5e-7
+    energy_consumption_reward_scale = 0.0
     undesired_contacts_reward_scale = -10.0
     applied_torque_reward_scale = -1e-4
     applied_torque_rate_reward_scale = -1e-7

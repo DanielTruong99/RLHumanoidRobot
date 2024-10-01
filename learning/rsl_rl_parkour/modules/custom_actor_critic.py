@@ -52,9 +52,9 @@ class EncoderActorCritic(ActorCriticRecurrent):
 
     def act(self, observations, masks=None, hidden_states=None):
         #! split proprioception and height map data based on the configuration (preferred to be done in the environment configuration)
-        #* proprioception: 3 + 3 + 3 + 3 + 10 + 10 + 10 + 2 + 1
+        #* proprioception: 3 + 3 + 3 + 3 + 3 + 10 + 10 + 10 + 3 + 14 + 2
         #* height_data: 220
-        proprioception, height_data = torch.split(observations, [45, 220], dim= -1)
+        proprioception, height_data = torch.split(observations, [64, 220], dim= -1)
         latent_height = self.encoder(height_data)
         policy_input = torch.cat([proprioception, latent_height], dim= -1)
         policy_output = super().act(policy_input, masks, hidden_states)
@@ -63,9 +63,9 @@ class EncoderActorCritic(ActorCriticRecurrent):
     
     def act_inference(self, observations):
         #! split proprioception and height map data based on the configuration (preferred to be done in the environment configuration)
-        #* proprioception: 3 + 3 + 3 + 3 + 10 + 10 + 10 + 2 + 1
+        #* proprioception: 3 + 3 + 3 + 3 + 3 + 10 + 10 + 10 + 3 + 14 + 2
         #* height_data: 220
-        proprioception, height_data = torch.split(observations, [45, 220], dim= -1)
+        proprioception, height_data = torch.split(observations, [64, 220], dim= -1)
         latent_height = self.encoder(height_data)
         policy_input = torch.cat([proprioception, latent_height], dim= -1)
         policy_output = super().act_inference(policy_input)
@@ -74,9 +74,9 @@ class EncoderActorCritic(ActorCriticRecurrent):
     
     def evaluate(self, critic_observations, masks=None, hidden_states=None):
         #! split proprioception and height map data based on the configuration (preferred to be done in the environment configuration)
-        #* proprioception: 3 + 3 + 3 + 3 + 10 + 10 + 10 + 2 + 1
+        #* proprioception: 3 + 3 + 3 + 3 + 3 + 10 + 10 + 10 + 3 + 14 + 2
         #* height_data: 220
-        proprioception, height_data = torch.split(critic_observations, [45, 220], dim= -1)
+        proprioception, height_data = torch.split(critic_observations, [64, 220], dim= -1)
         latent_height = self.encoder(height_data)
         critic_input = torch.cat([proprioception, latent_height], dim= -1)
         return super().evaluate(critic_input, masks, hidden_states)

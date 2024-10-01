@@ -81,9 +81,9 @@ def main():
     agent_cfg: RslRlOnPolicyRunnerCfg = cli_args.parse_rsl_rl_cfg(args_cli.task, args_cli)
 
     #! custom the configuration for play
-    agent_cfg.resume = True
-    agent_cfg.load_run = '2024-09-28_02-41-43'
-    agent_cfg.load_checkpoint = 'model_23198.pt'
+    # agent_cfg.resume = True
+    # agent_cfg.load_run = '2024-10-01_02-44-39'
+    # agent_cfg.load_checkpoint = 'model_2550.pt'
 
     # create isaac environment
     env = gym.make(args_cli.task, cfg=env_cfg)

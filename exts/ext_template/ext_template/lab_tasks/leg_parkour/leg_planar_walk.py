@@ -41,6 +41,9 @@ class LegPlanarWalkEnv(DirectRLEnv):
         #* previous applied torque
         self._previous_applied_torque = torch.zeros_like(self._robot.data.applied_torque, device=self.device)
 
+        #* phase
+        self._phase = torch.zeros(self.num_envs, 1, dtype=torch.float, device=self.device, requires_grad=False)
+
         #* undersired contact body ids
         self._underisred_contact_body_ids, _ = self._contact_sensor.find_bodies([".*_thigh", ".*_calf"])
         self._base_id, _ = self._contact_sensor.find_bodies("base")
@@ -197,7 +200,7 @@ class LegPlanarWalkEnv(DirectRLEnv):
         self._robot.set_joint_position_target(self._processed_actions)
 
     def _get_observations(self) -> torch.Dict[str, torch.Tensor | torch.Dict[str, torch.Tensor]]:
-        """Get the observations from the environment. 3 + 3 + 3 + 3 + 3 + 10 + 10 + 10 + 2 + 209 = 246
+        """Get the observations from the environment. 3 + 3 + 3 + 3 + 3 + 10 + 10 + 10 + 3 + 14 + 2 + 220 = 273
             a: base linear acceleration (, 3)
             v: base linear velocity (, 3)
             w: base angular velocity (, 3)
@@ -206,10 +209,23 @@ class LegPlanarWalkEnv(DirectRLEnv):
             p: joint positions (, 10)
             p_dot: joint velocities (, 10)
             a: last actions (, 10)
+            clock_phase: (, 3)
+            foot_state: right and left foot position and orientation in base frame (, 7) + (, 7)
             foot_contact_state: binary foot contact state (, 2)
-            height_data: height data from the height scanner (, 209)
+            height_data: height data from the height scanner (, 220)
             #//clock_phase: (, 3)
         """
+        #* update the clock phase
+        self._phase = torch.fmod(self._phase + self.step_dt, 1.0)
+        p = 2.0 * torch.pi * self._phase
+        smooth_wave = torch.sin(p) / \
+                (2*torch.sqrt(torch.sin(p)**2. + 0.2**2.)) + 1./2.
+        clock_phase = torch.concat((
+            smooth_wave,
+            torch.sin(p),
+            torch.cos(p),
+        ),dim=-1)
+
         #* cache the previous actions
         self._previous_actions_2 = self._previous_actions.clone()
         self._previous_actions = self.actions.clone()
@@ -221,11 +237,28 @@ class LegPlanarWalkEnv(DirectRLEnv):
         ).clip(-1.0, 1.0)
 
         #* binary contact state
-        foot_contact_force = self._contact_sensor.data.net_forces_w[:, self._feet_ids, 2] # type: ignore
-        foot_contact_state = torch.gt(foot_contact_force, 0.0).float()
+        foot_contact_state = torch.gt(self._contact_sensor.data.net_forces_w[:, self._feet_ids, 2], 0.0).float() # type: ignore
+
+        #* foot state
+        foot_pos_0_b = math_utils.quat_rotate_inverse(
+            self._robot.data.root_quat_w,
+            self._robot.data.body_pos_w[:, self._feet_ids[0], :] - self._robot.data.root_pos_w
+        )
+        foot_quat_0_b = math_utils.quat_mul(
+            math_utils.quat_inv(self._robot.data.root_quat_w),
+            self._robot.data.body_quat_w[:, self._feet_ids[0], :]
+        )
+        foot_pos_1_b = math_utils.quat_rotate_inverse(
+            self._robot.data.root_quat_w,
+            self._robot.data.body_pos_w[:, self._feet_ids[1], :] - self._robot.data.root_pos_w
+        )
+        foot_quat_1_b = math_utils.quat_mul(
+            math_utils.quat_inv(self._robot.data.root_quat_w),
+            self._robot.data.body_quat_w[:, self._feet_ids[1], :]
+        )
 
         #* base linear acceleration
-        base_lin_acc_b = math_utils.quat_rotate_inverse(self._robot.data.root_quat_w, self._robot.data.body_lin_acc_w[:, self._base_id, :])
+        base_lin_acc_b = math_utils.quat_rotate_inverse(self._robot.data.root_quat_w, self._robot.data.body_lin_acc_w[:, self._base_id[0], :])
         
 
         obs = torch.cat(
@@ -238,6 +271,11 @@ class LegPlanarWalkEnv(DirectRLEnv):
                 self._robot.data.joint_pos - self._robot.data.default_joint_pos,
                 self._robot.data.joint_vel,
                 self.actions,
+                clock_phase,
+                foot_pos_0_b,
+                foot_quat_0_b,
+                foot_pos_1_b,
+                foot_quat_1_b,
                 foot_contact_state,
                 height_data
             ),
@@ -298,6 +336,10 @@ class LegPlanarWalkEnv(DirectRLEnv):
         #* check if the base is in contact with the ground
         net_contact_forces = self._contact_sensor.data.net_forces_w_history
         died = torch.any(torch.max(torch.norm(net_contact_forces[:, :, self._base_id], dim=-1), dim=1)[0] > 1.0, dim=1) # type: ignore
+
+        #* check if the base's height is below the limit
+        is_below = self._robot.data.root_pos_w[:, 2] < 0.3
+        died |= is_below
 
         # #* check if the base's pitch and roll eceeded the limits
         # is_exceed_gx = torch.abs(self._robot.data.projected_gravity_b[:, 0]) > 0.85
