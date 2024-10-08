@@ -46,7 +46,7 @@
             "name": "Python: Play Environment",
             "type": "debugpy",
             "request": "launch",
-            "args" : ["--task", "LegRobot-planar-walk-play-v0", "--num_envs", "1"],
+            "args" : ["--task", "LegRobot-leap-play-v0", "--num_envs", "1"],
             "program": "${workspaceFolder}/scripts/rsl_rl_parkour/play.py",
             "console": "integratedTerminal",
             "envFile": "${workspaceFolder}/.vscode/.python.env",

@@ -82,8 +82,8 @@ def main():
 
     #! custom the configuration for play
     agent_cfg.resume = True
-    agent_cfg.load_run = '2024-09-28_02-41-43'
-    agent_cfg.load_checkpoint = 'model_23198.pt'
+    agent_cfg.load_run = '2024-10-04_23-26-18'
+    agent_cfg.load_checkpoint = 'model_55500.pt'
 
     # create isaac environment
     env = gym.make(args_cli.task, cfg=env_cfg)
@@ -139,9 +139,9 @@ def main():
             # env stepping
             obs, _, _, _ = env.step(actions)
 
-            env.unwrapped._commands[:, 0] = 1.2
+            env.unwrapped._commands[:, 0] = 0.9
             env.unwrapped._commands[:, 1] = 0.0
-            env.unwrapped._commands[:, 2] = -0.0
+            # env.unwrapped._commands[:, 2] = -0.0
             # obs[:, 9] = 1.0
             # obs[:, 10] = 0.0
             # obs[:, 11] = 0.0

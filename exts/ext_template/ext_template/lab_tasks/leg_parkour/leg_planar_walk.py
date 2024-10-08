@@ -20,19 +20,22 @@ class LegPlanarWalkEnv(DirectRLEnv):
             #! 2. _configure_gym_env_spaces()
         """
         super().__init__(cfg, render_mode, **kwargs)
+        self._init_buffers()
 
+
+    def _init_buffers(self):
         #! super.init() has created the self.actions
-        self._previous_actions = torch.zeros(self.num_envs, self.cfg.num_actions, device=self.device)
-        self._previous_actions_2 = torch.zeros(self.num_envs, self.cfg.num_actions, device=self.device)
+        self._previous_actions = torch.zeros(self.num_envs, self.cfg.num_actions, device=self.device, requires_grad=False)
+        self._previous_actions_2 = torch.zeros(self.num_envs, self.cfg.num_actions, device=self.device, requires_grad=False)
 
         #* minimal velocity command manager
-        self._time_left = torch.zeros(self.num_envs, device=self.device)
+        self._time_left = torch.zeros(self.num_envs, device=self.device, requires_grad=False)
 
         #* vx, vy, wz commands
-        self._commands = torch.zeros(self.num_envs, 3, device=self.device)
+        self._commands = torch.zeros(self.num_envs, 3, device=self.device, requires_grad=False)
 
         #* previous applied torque
-        self._previous_applied_torque = torch.zeros_like(self._robot.data.applied_torque, device=self.device)
+        self._previous_applied_torque = torch.zeros_like(self._robot.data.applied_torque, device=self.device, requires_grad=False)
 
         #* undersired contact body ids
         self._underisred_contact_body_ids, _ = self._contact_sensor.find_bodies([".*_thigh", ".*_calf"])
@@ -49,7 +52,7 @@ class LegPlanarWalkEnv(DirectRLEnv):
 
         #* Logging
         self._episode_sums = {
-            key: torch.zeros(self.num_envs, dtype=torch.float, device=self.device)
+            key: torch.zeros(self.num_envs, dtype=torch.float, device=self.device, requires_grad=False)
             for key in [
                 "track_lin_vel_xy_exp",
                 "track_ang_vel_z_exp",
@@ -199,18 +202,17 @@ class LegPlanarWalkEnv(DirectRLEnv):
             p_dot: joint velocities (, 10)
             a: last actions (, 10)
             foot_contact_state: binary foot contact state (, 2)
-            estimated_height: estimated height from the height scanner (, 1)
+            #//estimated_height: estimated height from the height scanner (, 1)
             height_data: height data from the height scanner (, 209)
             #//clock_phase: (, 3)
         """
-        self._previous_actions_2 = self._previous_actions.clone()
-        self._previous_actions = self.actions.clone()
-        self._previous_applied_torque = self._robot.data.applied_torque.clone()
+        self._previous_actions_2 = self._previous_actions
+        self._previous_actions = self.actions
+        self._previous_applied_torque = self._robot.data.applied_torque
 
         height_data = (
-            self._height_scanner.data.pos_w[:, 2].unsqueeze(1) - self._height_scanner.data.ray_hits_w[..., 2]
+            self._height_scanner.data.pos_w[:, 2].unsqueeze(1) - self._height_scanner.data.ray_hits_w[..., 2] - 0.5
         ).clip(-1.0, 1.0)
-        estimated_height = torch.mean(height_data, dim=1).unsqueeze(1)
 
         foot_contact_force = self._contact_sensor.data.net_forces_w[:, self._feet_ids, 2] # type: ignore
         foot_contact_state = torch.gt(foot_contact_force, 0.0).float()
@@ -225,7 +227,6 @@ class LegPlanarWalkEnv(DirectRLEnv):
                 self._robot.data.joint_vel,
                 self.actions,
                 foot_contact_state,
-                estimated_height,
                 height_data
             ),
             dim=-1,
@@ -465,6 +466,9 @@ def compute_rewards(
         joint_pos - soft_joint_pos_limits[:, :, 1]
     ).clip(min=0.0)
     joint_pos_limit =  torch.sum(out_of_limits, dim=1)
+
+    #* stumble 
+    # stumble_feet_0 = torch.norm(contact_sensor_net_forces_w_history[:, :, feet_ids[0]], dim=-1)
 
     return (
         lin_vel_error_mapped,

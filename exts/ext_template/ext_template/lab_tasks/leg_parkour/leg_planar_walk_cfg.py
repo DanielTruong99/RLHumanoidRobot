@@ -120,7 +120,7 @@ class LegPlanarWalkEnvCfg(DirectRLEnvCfg):
         7. height scanner configuration
         8. observation noise model configuration
     """
-    curriculum = True
+    curriculum = None
 
     #* command configuration
     commands = CommandCfg()
@@ -133,7 +133,7 @@ class LegPlanarWalkEnvCfg(DirectRLEnvCfg):
     decimation = 2
     action_scale = 1.0
     num_actions = 10
-    num_observations = 3 + 3 + 3 + 3 + 10 + 10 + 10 + 2 + 1 + 220 #! NEED TO BE CHANGED
+    num_observations = 3 + 3 + 3 + 3 + 10 + 10 + 10 + 2 + 220 #! NEED TO BE CHANGED
     num_states = 0
 
     #* simulation

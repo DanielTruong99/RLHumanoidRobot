@@ -18,7 +18,7 @@ class RslRlPpoEncoderActorCriticCfg(RslRlPpoActorCriticCfg):
         "type": "gru",
         "num_layers": 1,
         "hidden_size": 256,
-        "input_dim": 45 + 32, # proprioception + latent height
+        "input_dim": 44 + 32, # proprioception + latent height
     }
 
     encoder_cfg: dict = {

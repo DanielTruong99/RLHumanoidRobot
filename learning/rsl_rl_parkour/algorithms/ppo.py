@@ -86,7 +86,7 @@ class CustomPPO(PPO):
 
             mean_value_loss += value_loss.item()
             mean_surrogate_loss += surrogate_loss.item()
-        self.actor_critic.clip_std(min=1e-5)
+        # self.actor_critic.clip_std(min=1e-5)
 
         num_updates = self.num_learning_epochs * self.num_mini_batches
         mean_value_loss /= num_updates

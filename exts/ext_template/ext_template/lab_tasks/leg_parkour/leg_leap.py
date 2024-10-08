@@ -24,12 +24,49 @@ class LegLeapEnv(LegPlanarWalkEnv):
         limits[:, :, 0] = -1.7; limits[:, :, 1] = 0.78
         self._robot.write_joint_limits_to_sim(limits, thigh_joint_ids)
 
-        #* add heading target to the command
-        self._heading_target = torch.zeros(self.num_envs, device=self.device)
-
         #* set terrain level into 0
         self._terrain.terrain_levels = torch.zeros_like(self._terrain.terrain_levels)
         self._terrain.env_origins = self._terrain.terrain_origins[self._terrain.terrain_levels, self._terrain.terrain_types]
+
+    def _init_buffers(self):
+        super()._init_buffers()
+        
+        #* add heading target to the command
+        self._heading_target = torch.zeros(self.num_envs, device=self.device, requires_grad=False)
+
+        #* add log
+        self._episode_sums["feet_stumble"] = torch.zeros(self.num_envs, dtype=torch.float, device=self.device, requires_grad=False)
+
+    def _reset_idx(self, env_ids: torch.Tensor | None):
+        super()._reset_idx(env_ids)
+
+        #* log terrain levels
+        self.extras["log"].update({
+            "Curiculum/terrain_levels": torch.mean(self._terrain.terrain_levels.float()),
+        })
+
+    def _get_rewards(self):
+        baseline_rewards = super()._get_rewards()
+
+        feet_stumble = torch.norm(
+            self._contact_sensor.data.net_forces_w[:, self._feet_ids, 0:2], dim=-1 # type: ignore
+        ) > 2.0 * torch.norm(
+            self._contact_sensor.data.net_forces_w[:, self._feet_ids, 2:], dim=-1 # type: ignore
+        )  # type: ignore
+        feet_stumble = torch.any(feet_stumble, dim=-1).float()
+
+        rewards = {
+            "baseline_rewards": baseline_rewards,
+            "feet_stumble": feet_stumble * self.cfg.feet_stumble_reward_scale * self.step_dt
+        }
+        reward = torch.sum(torch.stack(list(rewards.values())), dim=0)
+        
+        #* Logging
+        for key, value in rewards.items():
+            if "baseline_rewards" in key: continue
+            self._episode_sums[key] += value
+        
+        return reward
 
     def _compute_curriculum(self, env_ids: torch.Tensor):
         """Compute the curriculum for the given environment ids."""
@@ -37,7 +74,7 @@ class LegLeapEnv(LegPlanarWalkEnv):
         distance = torch.norm(self._robot.data.root_pos_w[env_ids, :2] - self.scene.env_origins[env_ids, :2], dim=1)
         
         #* robots that walked far enough progress to harder terrains
-        move_up = distance > 1.7
+        move_up = distance > 2.5
         
         #* robots that walked less than half of their required distance go to simpler terrains
         move_down = distance < torch.norm(self._commands[env_ids, :2], dim=1) * self.max_episode_length_s * 0.5
@@ -57,8 +94,8 @@ class LegLeapEnv(LegPlanarWalkEnv):
         #* linear velocity - x direction
         self._commands[env_ids, 0] = r.uniform_(*self.cfg.commands.ranges_lin_vel_x)
 
-        #* linear velocity - y direction
-        self._commands[env_ids, 1] = r.uniform_(*self.cfg.commands.ranges_lin_vel_y)
+        # #* linear velocity - y direction
+        # self._commands[env_ids, 1] = r.uniform_(*self.cfg.commands.ranges_lin_vel_y)
 
 
     def _post_process_commands(self):
