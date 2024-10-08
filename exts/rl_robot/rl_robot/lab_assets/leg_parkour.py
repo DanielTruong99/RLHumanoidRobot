@@ -2,7 +2,7 @@ import os
 import omni.isaac.lab.sim as sim_utils
 from omni.isaac.lab.actuators import ActuatorNetMLPCfg, DCMotorCfg, ImplicitActuatorCfg, IdealPDActuatorCfg
 from omni.isaac.lab.assets.articulation import ArticulationCfg
-from exts.ext_template.ext_template.lab_assets import LOCAL_ASSETS_DATA_DIR
+from exts.rl_robot.rl_robot.lab_assets import LOCAL_ASSETS_DATA_DIR
 
 LEGPARKOUR_USD_PATH = f"{LOCAL_ASSETS_DATA_DIR}/Robots/Aidin/leg00/leg00.usd"
 

@@ -18,7 +18,7 @@ pybullet.setGravity(0, 0, 0)
 
 #* load assets
 ground = pybullet.loadURDF('plane.urdf')
-assets_path = "/../../../../exts/ext_template/ext_template/lab_assets/urdf"
+assets_path = "/../../../../exts/rl_robot/rl_robot/lab_assets/urdf"
 urdf_file_path = os.path.join(assets_path, "leg10/leg10.urdf")
 leg_robot = pybullet.loadURDF(urdf_file_path, [0, 0, 0.0], [0, 0, 0, 1])
 
