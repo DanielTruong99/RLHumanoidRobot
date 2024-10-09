@@ -435,10 +435,10 @@ def compute_rewards(
     #* joint regularization
     error_R_yaw = torch.square(joint_pos[:, R_hip_joint_index[0]])
     error_L_yaw = torch.square(joint_pos[:, L_hip_joint_index[0]])
-    error_hip2 = torch.square(joint_pos[:, R_hip2_joint_index[0]] - joint_pos[:, L_hip2_joint_index[0]])
-    error_thigh = torch.square(joint_pos[:, R_thigh_joint_index[0]] + joint_pos[:, L_thigh_joint_index[0]])
-    joint_regularization = (torch.exp(-error_R_yaw / 0.25) + torch.exp(-error_L_yaw / 0.25) + 
-                            torch.exp(-error_hip2 / 0.25) + torch.exp(-error_thigh / 0.25)) / 4.0
+    # error_hip2 = torch.square(joint_pos[:, R_hip2_joint_index[0]] - joint_pos[:, L_hip2_joint_index[0]])
+    # error_thigh = torch.square(joint_pos[:, R_thigh_joint_index[0]] + joint_pos[:, L_thigh_joint_index[0]])
+    joint_regularization = (torch.exp(-error_R_yaw / 0.25) + torch.exp(-error_L_yaw / 0.25)) / 2.0
+                          
 
     #* undesired contacts
     is_contact = torch.max(torch.norm(contact_sensor_net_forces_w_history[:, :, underisred_contact_body_ids], dim=-1), dim=1)[0] > 1.0

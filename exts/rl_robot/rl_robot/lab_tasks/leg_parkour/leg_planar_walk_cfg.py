@@ -33,7 +33,7 @@ from exts.rl_robot.rl_robot.lab_assets import LEGPARKOUR_CFG
 
 class CustomNoiseModel(NoiseModel):
     def __init__(self, num_envs: int, noise_model_cfg: NoiseModelCfg, device: str):
-        super().__init__(num_envs, noise_model_cfg)
+        super().__init__(num_envs, noise_model_cfg) #type: ignore
         self._device = device
 
 

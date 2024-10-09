@@ -12,7 +12,7 @@ from .rsl_rl_leap_cfg import LegLeapPPORunnerCfg, LegLeapPPOPlayRunnerCfg
     Register the LegRobot-planar-walk-v0 and LegRobot-planar-walk-play-v0 environments
 '''
 gym.register(
-    id="LegRobot-planar-walk-v0",
+    id="LegRobot-planar-walk-v1",
     entry_point="exts.rl_robot.rl_robot.lab_tasks.leg_parkour.leg_planar_walk:LegPlanarWalkEnv",
     disable_env_checker=True,
     kwargs={
@@ -22,7 +22,7 @@ gym.register(
 )
 
 gym.register(
-    id="LegRobot-planar-walk-play-v0",
+    id="LegRobot-planar-walk-play-v1",
     entry_point="exts.rl_robot.rl_robot.lab_tasks.leg_parkour.leg_planar_walk:LegPlanarWalkEnv",
     disable_env_checker=True,
     kwargs={
@@ -35,7 +35,7 @@ gym.register(
     Register the 
 '''
 gym.register(
-    id="LegRobot-leap-v0",
+    id="LegRobot-leap-v1",
     entry_point="exts.rl_robot.rl_robot.lab_tasks.leg_parkour.leg_leap:LegLeapEnv",
     disable_env_checker=True,
     kwargs={
@@ -45,7 +45,7 @@ gym.register(
 )
 
 gym.register(
-    id="LegRobot-leap-play-v0",
+    id="LegRobot-leap-play-v1",
     entry_point="exts.rl_robot.rl_robot.lab_tasks.leg_parkour.leg_leap:LegLeapEnv",
     disable_env_checker=True,
     kwargs={

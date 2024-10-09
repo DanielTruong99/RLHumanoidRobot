@@ -20,7 +20,7 @@ from . import mdp as custom_mdp
 
 #* terrain configurations
 PARKOUR_TERRAINS_CFG = TerrainGeneratorCfg(
-    size=(10.0, 10.0),
+    size=(20.0, 20.0),
     border_width=0.0,
     num_rows=10,
     num_cols=1,
@@ -30,7 +30,7 @@ PARKOUR_TERRAINS_CFG = TerrainGeneratorCfg(
     use_cache=False,
     sub_terrains={
         "hurdle_noise": terrain.CustomBoxTerrainCfg(
-            box_height_range=(0.2, 0.5), platform_width=(0.1, 10.0), box_position=(1.5, 0.0),
+            box_height_range=(0.1, 0.5), platform_width=(0.1, 20.0), box_position=(5.0, 0.0),
         )
     }, #type: ignore
     curriculum=True,
@@ -38,11 +38,10 @@ PARKOUR_TERRAINS_CFG = TerrainGeneratorCfg(
 
 @configclass
 class CommandCfg:
-    resampling_time_range = (5.0, 5.0)
-    ranges_lin_vel_x = (0.0, 1.5)
-    ranges_lin_vel_y = (-0.0, 0.0)
-    ranges_ang_vel_z = (-0.5, 0.5)
-    heading_control_stiffness = 0.15 #* added heading stiffness
+    resampling_time_range = (10.0, 10.0)
+    ranges_pos_x = (6.5, 9.5)
+    ranges_pos_y = (-3.0, 3.0)
+    ranges_heading= (-3.14/2, 3.14/2)
 
 @configclass
 class LegLeapEnvCfg(LegPlanarWalkEnvCfg):
@@ -93,32 +92,38 @@ class LegLeapEnvCfg(LegPlanarWalkEnvCfg):
     def __post_init__(self):
         super().__post_init__() #type: ignore
         
+        self.sim.physx.gpu_total_aggregate_pairs_capacity = 2**23
+        self.commands.resampling_time_range = (self.episode_length_s, self.episode_length_s) #type: ignore
+
         self.events.push_robot = None #type: ignore 
         self.observation_noise_model = None
         self.robot.soft_joint_pos_limit_factor = 1.0
 
         #* reward configuration
         #! encourage reward 
-        self.base_height_target = 0.81
-        self.lin_vel_reward_scale = 15.0
-        self.yaw_rate_reward_scale = 10.0
+        self.base_height_target = 0.83
+        self.position_tracking_reward_scale = 15.0
+        self.heading_tracking_reward_scale = 10.0
+        self.lin_vel_reward_scale = 0.0
+        self.yaw_rate_reward_scale = 0.0
         self.is_alive_reward_scale = 0.0
         self.flat_orientation_reward_scale = 7.0
         self.base_height_reward_scale = 7.0
         self.joint_regularization_reward_scale = 9.0
 
         #! penalty reward
-        self.first_order_action_rate_reward_scale = -5e-5
-        self.second_order_action_rate_reward_scale = -5e-5
+        self.joint_velocity_reward_scale = -1e-3
+        self.first_order_action_rate_reward_scale = -1e-2
+        self.second_order_action_rate_reward_scale = -1e-2
         self.energy_consumption_reward_scale = 0.0
-        self.undesired_contacts_reward_scale = -20.0
-        self.applied_torque_reward_scale = -1e-6
+        self.undesired_contacts_reward_scale = -1.0
+        self.applied_torque_reward_scale = -1e-5
         self.applied_torque_rate_reward_scale = 0.0
         self.joint_pos_limit_reward_scale = 0.0
-        self.feet_stumble_reward_scale = -25.0
+        self.feet_stumble_reward_scale = -1.0
 
         #! terminated penalty reward
-        self.terminated_penalty_reward_scale = -100.0
+        self.terminated_penalty_reward_scale = -200.0
 
 
 @configclass
@@ -135,4 +140,6 @@ class LegLeapPlayEnvCfg(LegLeapEnvCfg):
     def __post_init__(self):
         super().__post_init__() #type: ignore
         # self.commands.heading_control_stiffness = 0.15
+
+
 

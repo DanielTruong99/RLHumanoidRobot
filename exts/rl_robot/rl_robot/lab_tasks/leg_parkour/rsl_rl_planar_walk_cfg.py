@@ -9,10 +9,10 @@ from omni.isaac.lab_tasks.utils.wrappers.rsl_rl import (
 @configclass
 class RslRlPpoEncoderActorCriticCfg(RslRlPpoActorCriticCfg):
     class_name="EncoderActorCritic"
-    init_noise_std=0.7
+    init_noise_std=1.0
     actor_hidden_dims=[256, 256, 256]
     critic_hidden_dims=[256, 256, 256]
-    activation="celu"
+    activation="elu"
 
     memory_cfg: dict = {
         "type": "gru",
@@ -24,7 +24,7 @@ class RslRlPpoEncoderActorCriticCfg(RslRlPpoActorCriticCfg):
     encoder_cfg: dict = {
         "input_dim": 220,
         "hidden_dims": [128, 64],
-        "activation": "celu",
+        "activation": "elu",
         "output_dim": 32,
     }
 
