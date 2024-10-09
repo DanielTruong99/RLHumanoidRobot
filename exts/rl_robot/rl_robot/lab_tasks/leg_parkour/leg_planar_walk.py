@@ -202,17 +202,15 @@ class LegPlanarWalkEnv(DirectRLEnv):
             p_dot: joint velocities (, 10)
             a: last actions (, 10)
             foot_contact_state: binary foot contact state (, 2)
-            #//estimated_height: estimated height from the height scanner (, 1)
             height_data: height data from the height scanner (, 209)
-            #//clock_phase: (, 3)
         """
         self._previous_actions_2 = self._previous_actions
-        self._previous_actions = self.actions
-        self._previous_applied_torque = self._robot.data.applied_torque
+        self._previous_actions = self.actions.clone()
+        self._previous_applied_torque = self._robot.data.applied_torque.clone()
 
         height_data = (
-            self._height_scanner.data.pos_w[:, 2].unsqueeze(1) - self._height_scanner.data.ray_hits_w[..., 2] - 0.5
-        ).clip(-1.0, 1.0)
+            self._height_scanner.data.pos_w[:, 2].unsqueeze(1) - self._height_scanner.data.ray_hits_w[..., 2]
+        ).clip(-3.0, 3.0)
 
         foot_contact_force = self._contact_sensor.data.net_forces_w[:, self._feet_ids, 2] # type: ignore
         foot_contact_state = torch.gt(foot_contact_force, 0.0).float()
@@ -223,7 +221,7 @@ class LegPlanarWalkEnv(DirectRLEnv):
                 self._robot.data.root_ang_vel_b,
                 self._robot.data.projected_gravity_b,
                 self._commands,
-                self._robot.data.joint_pos - self._robot.data.default_joint_pos,
+                self._robot.data.joint_pos,
                 self._robot.data.joint_vel,
                 self.actions,
                 foot_contact_state,

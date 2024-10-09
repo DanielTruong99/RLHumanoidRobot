@@ -20,7 +20,7 @@ from . import mdp as custom_mdp
 
 #* terrain configurations
 PARKOUR_TERRAINS_CFG = TerrainGeneratorCfg(
-    size=(20.0, 20.0),
+    size=(10.0, 10.0),
     border_width=0.0,
     num_rows=10,
     num_cols=1,
@@ -29,12 +29,8 @@ PARKOUR_TERRAINS_CFG = TerrainGeneratorCfg(
     slope_threshold=0.75,
     use_cache=False,
     sub_terrains={
-        "hurdle_noise": terrain.HurdleNoiseTerrainCfg(
-            box_height_range=(0.2, 0.5), platform_width=(0.1, 20.0), box_position=(1.5, 0.0),
-            random_uniform_terrain_cfg=terrain_gen.HfRandomUniformTerrainCfg(
-                proportion=0.2, noise_range=(0.00, 0.00), noise_step=0.01, border_width=0.0,
-                size=(10.0, 10.0),
-            )
+        "hurdle_noise": terrain.CustomBoxTerrainCfg(
+            box_height_range=(0.2, 0.5), platform_width=(0.1, 10.0), box_position=(1.5, 0.0),
         )
     }, #type: ignore
     curriculum=True,
@@ -92,7 +88,7 @@ class LegLeapEnvCfg(LegPlanarWalkEnvCfg):
     )
 
     #* scene configurations
-    scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=4096, env_spacing=5.0, replicate_physics=True)
+    scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=4096, env_spacing=0.0, replicate_physics=True)
 
     def __post_init__(self):
         super().__post_init__() #type: ignore
