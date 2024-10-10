@@ -30,7 +30,7 @@ PARKOUR_TERRAINS_CFG = TerrainGeneratorCfg(
     use_cache=False,
     sub_terrains={
         "hurdle_noise": terrain.CustomBoxTerrainCfg(
-            box_height_range=(0.1, 0.5), platform_width=(0.1, 20.0), box_position=(5.0, 0.0),
+            box_height_range=(0.2, 0.5), platform_width=(0.1, 20.0), box_position=(5.0, 0.0),
         )
     }, #type: ignore
     curriculum=True,
@@ -95,7 +95,7 @@ class LegLeapEnvCfg(LegPlanarWalkEnvCfg):
         self.sim.physx.gpu_total_aggregate_pairs_capacity = 2**23
         self.commands.resampling_time_range = (self.episode_length_s, self.episode_length_s) #type: ignore
 
-        self.events.push_robot = None #type: ignore 
+        # self.events.push_robot = None #type: ignore 
         self.observation_noise_model = None
         self.robot.soft_joint_pos_limit_factor = 1.0
 
@@ -107,20 +107,23 @@ class LegLeapEnvCfg(LegPlanarWalkEnvCfg):
         self.lin_vel_reward_scale = 0.0
         self.yaw_rate_reward_scale = 0.0
         self.is_alive_reward_scale = 0.0
-        self.flat_orientation_reward_scale = 7.0
-        self.base_height_reward_scale = 7.0
-        self.joint_regularization_reward_scale = 9.0
+        self.flat_orientation_reward_scale = 5.0
+        self.base_height_reward_scale = 5.0
+        self.joint_regularization_reward_scale = 7.0
 
         #! penalty reward
         self.joint_velocity_reward_scale = -1e-3
-        self.first_order_action_rate_reward_scale = -1e-2
-        self.second_order_action_rate_reward_scale = -1e-2
+        self.joint_acc_reward_scale = -1e-7
+        self.first_order_action_rate_reward_scale = -1e-4
+        self.second_order_action_rate_reward_scale = -1e-5
         self.energy_consumption_reward_scale = 0.0
         self.undesired_contacts_reward_scale = -1.0
         self.applied_torque_reward_scale = -1e-5
         self.applied_torque_rate_reward_scale = 0.0
         self.joint_pos_limit_reward_scale = 0.0
         self.feet_stumble_reward_scale = -1.0
+        self.stand_still_reward_scale = -0.5
+        self.stand_still_collision_reward_scale = -1.0
 
         #! terminated penalty reward
         self.terminated_penalty_reward_scale = -200.0
@@ -140,6 +143,8 @@ class LegLeapPlayEnvCfg(LegLeapEnvCfg):
     def __post_init__(self):
         super().__post_init__() #type: ignore
         # self.commands.heading_control_stiffness = 0.15
+
+        self.events.push_robot = None #type: ignore
 
 
 

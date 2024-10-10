@@ -54,20 +54,20 @@ class LegPlanarWalkEnv(DirectRLEnv):
         self._episode_sums = {
             key: torch.zeros(self.num_envs, dtype=torch.float, device=self.device, requires_grad=False)
             for key in [
-                "track_lin_vel_xy_exp",
-                "track_ang_vel_z_exp",
+                # "track_lin_vel_xy_exp",
+                # "track_ang_vel_z_exp",
                 "base_height_exp",
                 "flat_orientation",
                 "first_order_action_rate",
                 "second_order_action_rate",
-                "energy_consumption",
+                # "energy_consumption",
                 "joint_regularization",
                 "undesired_contacts",
-                "is_alive",
+                # "is_alive",
                 "applied_torque",
-                "applied_torque_rate",
+                # "applied_torque_rate",
                 "terminated_penalty",
-                "joint_pos_limit"
+                # "joint_pos_limit"
             ]
         }
 
@@ -308,20 +308,20 @@ class LegPlanarWalkEnv(DirectRLEnv):
                 torch.Tensor: The computed reward tensor.
         """
         (
-            lin_vel_error_mapped,
-            yaw_rate_error_mapped,
+            # lin_vel_error_mapped,
+            # yaw_rate_error_mapped,
             height_error_mapped,
             flat_orientation_mapped,
             first_order_action_rate,
             second_order_action_rate,
-            energy_consumption,
+            # energy_consumption,
             joint_regularization,
             undesired_contacts,
-            is_alive,
+            # is_alive,
             applied_torque,
-            applied_torque_rate,
+            # applied_torque_rate,
             terminated_penalty,
-            joint_pos_limit
+            # joint_pos_limit
         ) = compute_rewards(
             commands=self._commands,
             root_lin_vel_b=self._robot.data.root_lin_vel_b,
@@ -351,20 +351,20 @@ class LegPlanarWalkEnv(DirectRLEnv):
         )
 
         rewards = {
-            "track_lin_vel_xy_exp": lin_vel_error_mapped * self.cfg.lin_vel_reward_scale * self.step_dt,
-            "track_ang_vel_z_exp": yaw_rate_error_mapped * self.cfg.yaw_rate_reward_scale * self.step_dt,
+            # "track_lin_vel_xy_exp": lin_vel_error_mapped * self.cfg.lin_vel_reward_scale * self.step_dt,
+            # "track_ang_vel_z_exp": yaw_rate_error_mapped * self.cfg.yaw_rate_reward_scale * self.step_dt,
             "base_height_exp": height_error_mapped * self.cfg.base_height_reward_scale * self.step_dt,
             "flat_orientation": flat_orientation_mapped * self.cfg.flat_orientation_reward_scale * self.step_dt,
             "first_order_action_rate": first_order_action_rate * self.cfg.first_order_action_rate_reward_scale * self.step_dt,
             "second_order_action_rate": second_order_action_rate * self.cfg.second_order_action_rate_reward_scale * self.step_dt,
-            "energy_consumption": energy_consumption * self.cfg.energy_consumption_reward_scale * self.step_dt,
+            # "energy_consumption": energy_consumption * self.cfg.energy_consumption_reward_scale * self.step_dt,
             "joint_regularization": joint_regularization * self.cfg.joint_regularization_reward_scale * self.step_dt,
             "undesired_contacts": undesired_contacts * self.cfg.undesired_contacts_reward_scale * self.step_dt,
-            "is_alive": is_alive * self.cfg.is_alive_reward_scale * self.step_dt,
+            # "is_alive": is_alive * self.cfg.is_alive_reward_scale * self.step_dt,
             "applied_torque": applied_torque * self.cfg.applied_torque_reward_scale * self.step_dt,
-            "applied_torque_rate": applied_torque_rate * self.cfg.applied_torque_rate_reward_scale * self.step_dt,
+            # "applied_torque_rate": applied_torque_rate * self.cfg.applied_torque_rate_reward_scale * self.step_dt,
             "terminated_penalty": terminated_penalty * self.cfg.terminated_penalty_reward_scale * self.step_dt,
-            "joint_pos_limit": joint_pos_limit * self.cfg.joint_pos_limit_reward_scale * self.step_dt
+            # "joint_pos_limit": joint_pos_limit * self.cfg.joint_pos_limit_reward_scale * self.step_dt
         }
         reward = torch.sum(torch.stack(list(rewards.values())), dim=0)
         
@@ -404,13 +404,13 @@ def compute_rewards(
     reset_terminated: torch.Tensor,
     previous_applied_torque: torch.Tensor
 ):
-    #* linear velocity tracking
-    lin_vel_error = torch.sum(torch.square(commands[:, :2] - root_lin_vel_b[:, :2]), dim=1)
-    lin_vel_error_mapped = torch.exp(-lin_vel_error / 0.25)
+    # #* linear velocity tracking
+    # lin_vel_error = torch.sum(torch.square(commands[:, :2] - root_lin_vel_b[:, :2]), dim=1)
+    # lin_vel_error_mapped = torch.exp(-lin_vel_error / 0.25)
     
-    #* angular velocity tracking
-    yaw_rate_error = torch.square(commands[:, 2] - root_ang_vel_b[:, 2])
-    yaw_rate_error_mapped = torch.exp(-yaw_rate_error / 0.25)
+    # #* angular velocity tracking
+    # yaw_rate_error = torch.square(commands[:, 2] - root_ang_vel_b[:, 2])
+    # yaw_rate_error_mapped = torch.exp(-yaw_rate_error / 0.25)
 
     #* base height
     base_height = torch.mean(height_scanner_pos_w[:, 2].unsqueeze(1) - height_scanner_ray_hits_w[..., 2], dim=1)
@@ -422,15 +422,15 @@ def compute_rewards(
     flat_orientation_mapped = torch.exp(-flat_orientation / 0.25)
 
     #* 1st order action rate
-    finite_diff_1st_order = (actions - previous_actions) / step_dt
+    finite_diff_1st_order = (actions - previous_actions)
     first_order_action_rate = torch.sum(torch.square(finite_diff_1st_order), dim=1)
 
     #* 2nd order action rate
-    finite_diff_2nd_order = (actions - 2.0 * previous_actions + previous_actions_2) / step_dt
+    finite_diff_2nd_order = (actions - 2.0 * previous_actions + previous_actions_2)
     second_order_action_rate = torch.sum(torch.square(finite_diff_2nd_order), dim=1)
 
     #* save energy
-    energy_consumption = torch.sum(torch.square(applied_torque * joint_vel), dim=1)
+    # energy_consumption = torch.sum(torch.square(applied_torque * joint_vel), dim=1)
 
     #* joint regularization
     error_R_yaw = torch.square(joint_pos[:, R_hip_joint_index[0]])
@@ -444,45 +444,45 @@ def compute_rewards(
     is_contact = torch.max(torch.norm(contact_sensor_net_forces_w_history[:, :, underisred_contact_body_ids], dim=-1), dim=1)[0] > 1.0
     undesired_contacts = torch.sum(is_contact, dim=1)
 
-    #* is alive
-    is_alive = (~reset_terminated).float()
+    # #* is alive
+    # is_alive = (~reset_terminated).float()
 
     #* applied torque
     applied_torque_penalty = torch.sum(torch.square(applied_torque), dim=1)
 
     #* applied torque rate
-    applied_torque_rate = torch.sum(torch.square(applied_torque - previous_applied_torque), dim=1)
+    # applied_torque_rate = torch.sum(torch.square(applied_torque - previous_applied_torque), dim=1)
 
     #* terminated penalty
     terminated_penalty = reset_terminated.float()
 
-    #* joint position limit
-    out_of_limits = -(
-        joint_pos - soft_joint_pos_limits[:, :, 0]
-    ).clip(max=0.0)
-    out_of_limits += (
-        joint_pos - soft_joint_pos_limits[:, :, 1]
-    ).clip(min=0.0)
-    joint_pos_limit =  torch.sum(out_of_limits, dim=1)
+    # #* joint position limit
+    # out_of_limits = -(
+    #     joint_pos - soft_joint_pos_limits[:, :, 0]
+    # ).clip(max=0.0)
+    # out_of_limits += (
+    #     joint_pos - soft_joint_pos_limits[:, :, 1]
+    # ).clip(min=0.0)
+    # joint_pos_limit =  torch.sum(out_of_limits, dim=1)
 
     #* stumble 
     # stumble_feet_0 = torch.norm(contact_sensor_net_forces_w_history[:, :, feet_ids[0]], dim=-1)
 
     return (
-        lin_vel_error_mapped,
-        yaw_rate_error_mapped,
+        # lin_vel_error_mapped,
+        # yaw_rate_error_mapped,
         height_error_mapped,
         flat_orientation_mapped,
         first_order_action_rate,
         second_order_action_rate,
-        energy_consumption,
+        # energy_consumption,
         joint_regularization,
         undesired_contacts,
-        is_alive,
+        # is_alive,
         applied_torque_penalty,
-        applied_torque_rate,
+        # applied_torque_rate,
         terminated_penalty,
-        joint_pos_limit
+        # joint_pos_limit
     )
 
     
