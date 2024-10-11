@@ -137,7 +137,7 @@ class LegLeapEnv(LegPlanarWalkEnv):
         #* position_error < 1e-2 
         #* heading_error < 10 degree
         #* time_left > 0.0
-        move_up = (position_error < 1e-2) & (heading_error < (10.0*3.14/180.0)) & (self._time_left[env_ids] > 0.0)
+        move_up = (position_error < 12.0/100.0) & (heading_error < (10.0*3.14/180.0)) & (self._time_left[env_ids] > 0.0)
         
         #* update terrain levels
         self._terrain.update_env_origins(env_ids, move_up, ~move_up)

@@ -270,7 +270,7 @@ class LegPlanarWalkEnvCfg(DirectRLEnvCfg):
 
     #* reward configuration
     #! encourage reward 
-    base_height_target = 0.78
+    base_height_target = 0.75
     lin_vel_reward_scale = 10.0
     yaw_rate_reward_scale = 5.0
     is_alive_reward_scale = 0.0

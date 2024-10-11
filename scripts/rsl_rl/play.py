@@ -40,6 +40,7 @@ import torch
 from rsl_rl.runners import OnPolicyRunner
 from learning.rsl_rl_parkour.runners import CustomOnPolicyRunner
 
+import omni.isaac.lab.sim as sim_utils
 from omni.isaac.lab.envs import DirectMARLEnv, multi_agent_to_single_agent
 from omni.isaac.lab.utils.dict import print_dict
 import exts.rl_robot.rl_robot.lab_tasks
@@ -50,6 +51,7 @@ from omni.isaac.lab_tasks.utils.wrappers.rsl_rl import (
     export_policy_as_jit,
     export_policy_as_onnx,
 )
+from omni.isaac.lab.markers import VisualizationMarkers, VisualizationMarkersCfg
 
 # Import extensions to set up environment tasks
 import rl_robot.lab_tasks  # noqa: F401
@@ -139,6 +141,21 @@ def main():
     # )
     #! Create a logger
     data_logger = Logger()
+    
+
+    #! create marker
+    goal_visualizer = VisualizationMarkers(VisualizationMarkersCfg(
+        prim_path="/World/visualization",
+        markers={
+            "sphere": sim_utils.SphereCfg(
+                radius=0.1,
+                visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.0, 1.0, 0.0)),
+            ),
+        }
+    ))
+
+    
+
     # reset environment
     obs, _ = env.get_observations()
     timestep = 0
@@ -147,6 +164,9 @@ def main():
     stop_state_log_s = 5.0
     # stop_state_log = env.env.max_episode_length
     stop_state_log = int(stop_state_log_s / policy_step_dt)    # simulate environment
+
+
+
     while simulation_app.is_running():
         # run everything in inference mode
         with torch.inference_mode():
@@ -156,6 +176,9 @@ def main():
             obs, _, _, _ = env.step(actions)
 
             # #* command [x, y, heading]
+            translation = env.unwrapped._pos_command_w.clone() #type: ignore
+            translation[:, 2] += 0.75
+            goal_visualizer.visualize(translation) #type: ignore
             # env.unwrapped._commands[:, 0] = 7.5
             # env.unwrapped._commands[:, 1] = 0.0
             # env.unwrapped._commands[:, 2] = 0.0

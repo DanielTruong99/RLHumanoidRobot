@@ -101,7 +101,7 @@ class LegLeapEnvCfg(LegPlanarWalkEnvCfg):
 
         #* reward configuration
         #! encourage reward 
-        self.base_height_target = 0.83
+        self.base_height_target = 0.75
         self.position_tracking_reward_scale = 15.0
         self.heading_tracking_reward_scale = 10.0
         self.lin_vel_reward_scale = 0.0
