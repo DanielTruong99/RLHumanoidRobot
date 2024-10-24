@@ -67,12 +67,12 @@ class EventCfg:
             "position_range": {
                 'R_hip_joint': (-0.1, 0.1),
                 'R_hip2_joint': (-0.2, 0.2),
-                'R_thigh_joint': (-0.35, 0.35),
+                'R_thigh_joint': (-0.2, 0.2),
                 'R_calf_joint': (0.0, 0.5),
                 'R_toe_joint': (-0.3, 0.3),
                 'L_hip_joint': (-0.1, 0.1),
                 'L_hip2_joint': (-0.2, 0.2),
-                'L_thigh_joint': (-0.35, 0.35),
+                'L_thigh_joint': (-0.2, 0.2),
                 'L_calf_joint': (0.0, 0.5),
                 'L_toe_joint': (-0.3, 0.3),
             },
@@ -95,7 +95,13 @@ class EventCfg:
         func=mdp.push_by_setting_velocity,
         mode="interval",
         interval_range_s=(2.5, 2.5),
-        params={"velocity_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5)}},
+        params={"velocity_range": {"x": (-0.7, 0.7), "y": (-0.7, 0.7)}},
+    )
+
+    # // deprecated
+    reset_phase = EventTermCfg(
+        func=custom_mdp.reset_phase,
+        mode="reset",
     )
 
 @configclass
@@ -103,7 +109,7 @@ class CommandCfg:
     resampling_time_range = (5.0, 5.0)
     ranges_lin_vel_x = (0.0, 1.1)
     ranges_lin_vel_y = (-0.0, 0.0)
-    ranges_ang_vel_z = (-0.5, 0.5)
+    ranges_ang_vel_z = (-0.15, 0.15)
 
 @configclass
 class SimpleWalkingRobotEnvCfg(DirectRLEnvCfg):
@@ -131,7 +137,7 @@ class SimpleWalkingRobotEnvCfg(DirectRLEnvCfg):
     decimation = 2
     action_scale = 1.0
     num_actions = 10
-    num_observations = 3 + 3 + 3 + 3 + 10 + 10 + 10 + 2 + 1 #! NEED TO BE CHANGED
+    num_observations = 3 + 3 + 3 + 3 + 10 + 10 + 10 + 2 + 1 + 3 #! NEED TO BE CHANGED
     num_states = 0
 
     #* simulation
@@ -225,6 +231,7 @@ class SimpleWalkingRobotEnvCfg(DirectRLEnvCfg):
         debug_vis=False,
     )
 
+    #! deprecated
     # #* height scanner configuration
     # height_scanner = RayCasterCfg(
     #     prim_path="/World/envs/env_.*/Robot/base",
@@ -235,6 +242,7 @@ class SimpleWalkingRobotEnvCfg(DirectRLEnvCfg):
     #     mesh_prim_paths=["/World/ground"],
     # )
 
+    #! deprecated
     #* observation noise model configuration
     # observation_noise_model = NoiseModelCfg(
     #     class_type=NewCustomNoiseModel,
@@ -270,22 +278,24 @@ class SimpleWalkingRobotEnvCfg(DirectRLEnvCfg):
     #! encourage reward 
     base_height_target = 0.75
     lin_vel_reward_scale = 15.0
-    yaw_rate_reward_scale = 10.0
+    yaw_rate_reward_scale = 5.0
     flat_orientation_reward_scale = 5.0
-    base_height_reward_scale = 5.0
-    joint_regularization_reward_scale = 7.0
+    base_height_reward_scale = 7.0
+    joint_regularization_reward_scale = 9.0
 
     #! penalty reward
     joint_velocity_reward_scale = -1e-3
-    joint_acc_reward_scale = -1e-7
-    first_order_action_rate_reward_scale = -1e-4
-    second_order_action_rate_reward_scale = -1e-5
+    joint_acc_reward_scale = -1e-6
+    first_order_action_rate_reward_scale = -1e-3
+    second_order_action_rate_reward_scale = -1e-4
     undesired_contacts_reward_scale = -1.0
-    applied_torque_reward_scale = -1e-5
-    feet_stumble_reward_scale = -1.0
+    applied_torque_reward_scale = -1e-6
+    feet_stumble_reward_scale = 0.0
+    joint_pos_limit_reward_scale = -20.0
+    joint_vel_limit_reward_scale = -10.0
 
     #! terminated penalty reward
-    terminated_penalty_reward_scale = -200.0
+    terminated_penalty_reward_scale = -100.0
 
 @configclass
 class SimpleWalkingRobotPlayEnvCfg(SimpleWalkingRobotEnvCfg):

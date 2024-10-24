@@ -10,6 +10,11 @@ import omni.isaac.lab.utils.math as math_utils
 if TYPE_CHECKING:
     from omni.isaac.lab.envs import ManagerBasedEnv
 
+def update_phase(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")):
+    env._phase = torch.fmod(env._phase + env.step_dt, 1.0) # type: ignore
+
+def reset_phase(env: ManagerBasedEnv, env_ids, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")):
+    env._phase[env_ids, 0] = torch.rand((torch.numel(env_ids),), requires_grad=False, device=env.device) # type: ignore
 
 def reset_joints_by_offset(
     env: ManagerBasedEnv,

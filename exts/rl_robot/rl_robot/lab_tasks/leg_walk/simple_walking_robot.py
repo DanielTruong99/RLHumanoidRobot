@@ -13,8 +13,21 @@ from ..leg_parkour.leg_planar_walk import LegPlanarWalkEnv
 class SimpleWalkingRobot(LegPlanarWalkEnv):
     cfg: SimpleWalkingRobotEnvCfg
 
+    def __init__(self, cfg, render_mode: str | None = None, **kwargs):
+        super().__init__(cfg, render_mode, **kwargs)
+        
+        #* adjust the joint limit of the thigh joint [-1.7, 0] -> [-1.7, 0.78]
+        thigh_joint_ids = self._robot.find_joints(".*_thigh_joint")[0]
+        limits = torch.zeros_like(self._robot.data.joint_limits[:, thigh_joint_ids, :])
+        limits[:, :, 0] = -1.7; limits[:, :, 1] = 0.78
+        self._robot.write_joint_limits_to_sim(limits, thigh_joint_ids)
+
     def _init_buffers(self):
         super()._init_buffers()
+
+        #!// deprecated
+        # #* add phase 
+        self._phase = torch.zeros(self.num_envs, 1, dtype=torch.float, device=self.device, requires_grad=False)
 
         #* Logging
         self._episode_sums = {
@@ -33,6 +46,8 @@ class SimpleWalkingRobot(LegPlanarWalkEnv):
                 "feet_stumble",
                 "joint_velocity_penalty",
                 "joint_acc_penalty",
+                "joint_pos_limit",
+                "joint_vel_limit",
             ]
         }
 
@@ -69,6 +84,7 @@ class SimpleWalkingRobot(LegPlanarWalkEnv):
             p: joint positions (, 10)
             p_dot: joint velocities (, 10)
             a: last actions (, 10)
+            clock_phase: clock phase (, 3)
             foot_contact_state: binary foot contact state (, 2)
             height_data: height data from the height scanner (, 1)
         """
@@ -77,6 +93,17 @@ class SimpleWalkingRobot(LegPlanarWalkEnv):
         self._previous_applied_torque = self._robot.data.applied_torque.clone()
 
         height_data = self._robot.data.root_pos_w[:, 2].unsqueeze(-1)
+
+        #!// deprecated
+        self._phase = torch.fmod(self._phase + self.step_dt, 1.0)
+        p = 2.0 * torch.pi * self._phase
+        smooth_wave = torch.sin(p) / \
+                (2*torch.sqrt(torch.sin(p)**2. + 0.2**2.)) + 1./2.
+        clock_phase = torch.concat((
+            smooth_wave,
+            torch.sin(p),
+            torch.cos(p),
+        ),dim=-1)
 
         foot_contact_force = self._contact_sensor.data.net_forces_w[:, self._feet_ids, 2] # type: ignore
         foot_contact_state = torch.gt(foot_contact_force, 0.0).float()
@@ -91,7 +118,7 @@ class SimpleWalkingRobot(LegPlanarWalkEnv):
                 self._robot.data.joint_vel,
                 self.actions,
                 foot_contact_state,
-                height_data
+                height_data / 0.65
             ),
             dim=-1,
         )
@@ -113,6 +140,8 @@ class SimpleWalkingRobot(LegPlanarWalkEnv):
             feet_stumble,
             joint_velocity_penalty,
             joint_acc_penalty,
+            joint_pos_limit,
+            joint_vel_limit,
         ) = compute_rewards(
             root_ang_vel_b=self._robot.data.root_ang_vel_b,
             commands=self._commands,
@@ -138,6 +167,8 @@ class SimpleWalkingRobot(LegPlanarWalkEnv):
             underisred_contact_body_ids=self._underisred_contact_body_ids,
             feet_ids=self._feet_ids,
             reset_terminated=self.reset_terminated,
+            soft_joint_pos_limits=self._robot.data.soft_joint_pos_limits,
+            soft_joint_vel_limits=self._robot.data.soft_joint_vel_limits,
         )
 
         rewards = {
@@ -154,6 +185,8 @@ class SimpleWalkingRobot(LegPlanarWalkEnv):
             "feet_stumble": feet_stumble * self.cfg.feet_stumble_reward_scale * self.step_dt,
             "joint_velocity_penalty": joint_velocity_penalty * self.cfg.joint_velocity_reward_scale * self.step_dt,
             "joint_acc_penalty": joint_acc_penalty * self.cfg.joint_acc_reward_scale * self.step_dt,
+            "joint_pos_limit": joint_pos_limit * self.cfg.joint_pos_limit_reward_scale * self.step_dt,
+            "joint_vel_limit": joint_vel_limit * self.cfg.joint_vel_limit_reward_scale * self.step_dt,
         }
 
         reward = torch.sum(torch.stack(list(rewards.values())), dim=0)
@@ -190,6 +223,8 @@ def compute_rewards(
     underisred_contact_body_ids: list[int],
     feet_ids: list[int],
     reset_terminated: torch.Tensor,
+    soft_joint_pos_limits: torch.Tensor,
+    soft_joint_vel_limits: torch.Tensor,
 ):
     # #* linear velocity tracking
     lin_vel_error = torch.sum(torch.square(commands[:, :2] - root_lin_vel_b[:, :2]), dim=1)
@@ -245,6 +280,22 @@ def compute_rewards(
     joint_velocity_penalty = torch.sum(torch.square(joint_vel), dim=1)    
     joint_acc_penalty = torch.sum(torch.square(joint_acc), dim=1)
 
+    #* joint position limit
+    out_of_limits = -(
+        joint_pos - soft_joint_pos_limits[:, :, 0]
+    ).clip(max=0.0)
+    out_of_limits += (
+        joint_pos - soft_joint_pos_limits[:, :, 1]
+    ).clip(min=0.0)
+    joint_pos_limit =  torch.sum(out_of_limits, dim=1)
+
+    #* joint velocity limit
+    out_of_limits = (
+        torch.abs(joint_vel)
+        - soft_joint_vel_limits
+    )
+    out_of_limits = out_of_limits.clip_(min=0.0, max=1.0)
+    joint_vel_limit = torch.sum(out_of_limits, dim=1)
 
     return (
         lin_vel_error_mapped,
@@ -260,4 +311,6 @@ def compute_rewards(
         feet_stumble,
         joint_velocity_penalty,
         joint_acc_penalty,
+        joint_pos_limit,
+        joint_vel_limit,
     )
