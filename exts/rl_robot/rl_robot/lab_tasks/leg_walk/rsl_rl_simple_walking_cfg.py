@@ -9,7 +9,7 @@ from omni.isaac.lab_tasks.utils.wrappers.rsl_rl import (
 @configclass
 class CustomRslRlPpoActorCriticCfg(RslRlPpoActorCriticCfg):
     class_name="ActorCritic"
-    init_noise_std=0.5
+    init_noise_std=1.0
     actor_hidden_dims=[256, 256, 256]
     critic_hidden_dims=[256, 256, 256]
     activation="elu"
@@ -47,5 +47,5 @@ class SimpleWalkingRobotPPORunnerCfg(RslRlOnPolicyRunnerCfg):
 @configclass
 class SimpleWalkingRobotPPOPlayRunnerCfg(SimpleWalkingRobotPPORunnerCfg):
     resume = False
-    # load_checkpoint = "model_2850.pt"
-    # load_run = "2024-10-23_18-21-54"
+    # load_checkpoint = "model_10000.pt"
+    # load_run = "2024-10-30_02-36-32"

@@ -13,7 +13,7 @@ from omni.isaac.lab.sensors import ContactSensorCfg, RayCasterCfg, patterns
 from omni.isaac.lab.sim import SimulationCfg
 from omni.isaac.lab.terrains import TerrainImporterCfg
 from omni.isaac.lab.utils import configclass
-from omni.isaac.lab.actuators import ImplicitActuatorCfg
+from omni.isaac.lab.actuators import ImplicitActuatorCfg, IdealPDActuatorCfg
 from omni.isaac.lab.utils.assets import ISAACLAB_NUCLEUS_DIR
 from omni.isaac.lab.utils.noise import AdditiveUniformNoiseCfg as UNoiseCfg
 from omni.isaac.lab.utils.noise import NoiseModelCfg, NoiseModel
@@ -98,16 +98,16 @@ class EventCfg:
         params={"velocity_range": {"x": (-0.7, 0.7), "y": (-0.7, 0.7)}},
     )
 
-    # // deprecated
-    reset_phase = EventTermCfg(
-        func=custom_mdp.reset_phase,
-        mode="reset",
-    )
+    # # // deprecated
+    # reset_phase = EventTermCfg(
+    #     func=custom_mdp.reset_phase,
+    #     mode="reset",
+    # )
 
 @configclass
 class CommandCfg:
     resampling_time_range = (5.0, 5.0)
-    ranges_lin_vel_x = (0.0, 1.1)
+    ranges_lin_vel_x = (0.3, 4.5)
     ranges_lin_vel_y = (-0.0, 0.0)
     ranges_ang_vel_z = (-0.15, 0.15)
 
@@ -134,7 +134,7 @@ class SimpleWalkingRobotEnvCfg(DirectRLEnvCfg):
 
     #* env
     episode_length_s = 5.0
-    decimation = 2
+    decimation = 4
     action_scale = 1.0
     num_actions = 10
     num_observations = 3 + 3 + 3 + 3 + 10 + 10 + 10 + 2 + 1 + 3 #! NEED TO BE CHANGED
@@ -167,10 +167,10 @@ class SimpleWalkingRobotEnvCfg(DirectRLEnvCfg):
                 effort_limit=300.0,
                 velocity_limit=100.0,
                 stiffness={
-                    ".*_hip_joint": 150.0,
-                    ".*_hip2_joint": 150.0,
-                    ".*_thigh_joint": 200.0,
-                    ".*_calf_joint": 200.0,
+                    ".*_hip_joint": 30.0,
+                    ".*_hip2_joint": 30.0,
+                    ".*_thigh_joint": 30.0,
+                    ".*_calf_joint": 30.0,
                 },
                 damping={
                     ".*_hip_joint": 5.0,
@@ -187,6 +187,7 @@ class SimpleWalkingRobotEnvCfg(DirectRLEnvCfg):
                 damping={".*_toe_joint": 5.0},
             ),
         },
+        soft_joint_pos_limit_factor=0.97,
     ) 
     
     #* contact sensor configuration for the feet
@@ -276,23 +277,23 @@ class SimpleWalkingRobotEnvCfg(DirectRLEnvCfg):
 
     #* reward configuration
     #! encourage reward 
-    base_height_target = 0.75
+    base_height_target = 0.85
     lin_vel_reward_scale = 15.0
     yaw_rate_reward_scale = 5.0
-    flat_orientation_reward_scale = 5.0
-    base_height_reward_scale = 7.0
-    joint_regularization_reward_scale = 9.0
+    flat_orientation_reward_scale = 7.0
+    base_height_reward_scale = 5.0
+    joint_regularization_reward_scale = 3.0
 
     #! penalty reward
-    joint_velocity_reward_scale = -1e-3
-    joint_acc_reward_scale = -1e-6
+    joint_velocity_reward_scale = 0.0
+    joint_acc_reward_scale = 0.0
     first_order_action_rate_reward_scale = -1e-3
     second_order_action_rate_reward_scale = -1e-4
-    undesired_contacts_reward_scale = -1.0
+    undesired_contacts_reward_scale = -0.0
     applied_torque_reward_scale = -1e-6
     feet_stumble_reward_scale = 0.0
-    joint_pos_limit_reward_scale = -20.0
-    joint_vel_limit_reward_scale = -10.0
+    joint_pos_limit_reward_scale = -0.0
+    joint_vel_limit_reward_scale = -0.0
 
     #! terminated penalty reward
     terminated_penalty_reward_scale = -100.0

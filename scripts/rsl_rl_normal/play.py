@@ -132,10 +132,10 @@ def main():
     policy = ppo_runner.get_inference_policy(device=env.unwrapped.device)
 
     # # export policy to onnx/jit
-    # export_model_dir = os.path.join(os.path.dirname(resume_path), "exported")
-    # export_policy_as_jit(
-    #     ppo_runner.alg.actor_critic, ppo_runner.obs_normalizer, path=export_model_dir, filename="policy.pt"
-    # )
+    export_model_dir = os.path.join(os.path.dirname(resume_path), "exported")
+    export_policy_as_jit(
+        ppo_runner.alg.actor_critic, ppo_runner.obs_normalizer, path=export_model_dir, filename="policy.pt"
+    )
     # export_policy_as_onnx(
     #     ppo_runner.alg.actor_critic, normalizer=ppo_runner.obs_normalizer, path=export_model_dir, filename="policy.onnx"
     # )
@@ -179,7 +179,7 @@ def main():
             # translation = env.unwrapped._pos_command_w.clone() #type: ignore
             # translation[:, 2] += 0.75
             # goal_visualizer.visualize(translation) #type: ignore
-            env.unwrapped._commands[:, 0] = 0.0
+            env.unwrapped._commands[:, 0] = 3.5
             env.unwrapped._commands[:, 1] = 0.0
             env.unwrapped._commands[:, 2] = 0.0
 
@@ -202,7 +202,7 @@ def main():
                     'base_wz': env.env.scene["robot"].data.root_ang_vel_b[0, 2].item(),
                     **{'pos_' + key : env.env.scene["robot"].data.joint_pos[0, env.env.scene["robot"].find_joints(key)[0]].item() for index, key in enumerate(DOF_NAMES)},
                     **{'vel_' + key : env.env.scene["robot"].data.joint_vel[0, env.env.scene["robot"].find_joints(key)[0]].item() for index, key in enumerate(DOF_NAMES)},
-                    **{'torque_' + key : env.env.scene["robot"].data.applied_torque[0, index].item() for index, key in enumerate(DOF_NAMES)},
+                    **{'torque_' + key : env.env.scene["robot"].data.applied_torque[0, env.env.scene["robot"].find_joints(key)[0]].item() for index, key in enumerate(DOF_NAMES)},
                 }
 
                 data_logger.log_states(data_frame)

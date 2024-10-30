@@ -5,6 +5,7 @@ from omni.isaac.lab.assets.articulation import ArticulationCfg
 from exts.rl_robot.rl_robot.lab_assets import LOCAL_ASSETS_DATA_DIR
 
 LEGPARKOUR_USD_PATH = f"{LOCAL_ASSETS_DATA_DIR}/Robots/Aidin/leg00/leg00.usd"
+# LEGPARKOUR_USD_PATH = "/home/ryz2/DanielWorkspace/RL/ROS2_IsaacSim_Validation/usd/leg00/leg00.usd"
 
 LEGPARKOUR_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
@@ -24,7 +25,7 @@ LEGPARKOUR_CFG = ArticulationCfg(
         ),
     ),
     init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.0, 0.0, 0.81),
+        pos=(0.0, 0.0, 0.93),
         joint_pos={
             'R_hip_joint': 0.0,
             'R_hip2_joint': 0.0,

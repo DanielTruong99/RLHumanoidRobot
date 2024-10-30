@@ -27,7 +27,7 @@ class SimpleWalkingRobot(LegPlanarWalkEnv):
 
         #!// deprecated
         # #* add phase 
-        self._phase = torch.zeros(self.num_envs, 1, dtype=torch.float, device=self.device, requires_grad=False)
+        # self._phase = torch.zeros(self.num_envs, 1, dtype=torch.float, device=self.device, requires_grad=False)
 
         #* Logging
         self._episode_sums = {
@@ -95,15 +95,15 @@ class SimpleWalkingRobot(LegPlanarWalkEnv):
         height_data = self._robot.data.root_pos_w[:, 2].unsqueeze(-1)
 
         #!// deprecated
-        self._phase = torch.fmod(self._phase + self.step_dt, 1.0)
-        p = 2.0 * torch.pi * self._phase
-        smooth_wave = torch.sin(p) / \
-                (2*torch.sqrt(torch.sin(p)**2. + 0.2**2.)) + 1./2.
-        clock_phase = torch.concat((
-            smooth_wave,
-            torch.sin(p),
-            torch.cos(p),
-        ),dim=-1)
+        # self._phase = torch.fmod(self._phase + self.step_dt, 1.0)
+        # p = 2.0 * torch.pi * self._phase
+        # smooth_wave = torch.sin(p) / \
+        #         (2*torch.sqrt(torch.sin(p)**2. + 0.2**2.)) + 1./2.
+        # clock_phase = torch.concat((
+        #     smooth_wave,
+        #     torch.sin(p),
+        #     torch.cos(p),
+        # ),dim=-1)
 
         foot_contact_force = self._contact_sensor.data.net_forces_w[:, self._feet_ids, 2] # type: ignore
         foot_contact_state = torch.gt(foot_contact_force, 0.0).float()
@@ -117,8 +117,9 @@ class SimpleWalkingRobot(LegPlanarWalkEnv):
                 self._robot.data.joint_pos,
                 self._robot.data.joint_vel,
                 self.actions,
+                # clock_phase,
                 foot_contact_state,
-                height_data / 0.65
+                height_data,
             ),
             dim=-1,
         )
