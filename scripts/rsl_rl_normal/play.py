@@ -179,7 +179,7 @@ def main():
             # translation = env.unwrapped._pos_command_w.clone() #type: ignore
             # translation[:, 2] += 0.75
             # goal_visualizer.visualize(translation) #type: ignore
-            env.unwrapped._commands[:, 0] = 3.5
+            env.unwrapped._commands[:, 0] = 0.95
             env.unwrapped._commands[:, 1] = 0.0
             env.unwrapped._commands[:, 2] = 0.0
 
