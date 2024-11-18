@@ -26,7 +26,7 @@ class LegLeapEnv(LegPlanarWalkEnv):
         self._robot.write_joint_limits_to_sim(limits, thigh_joint_ids)
 
         #* set terrain level into 0
-        self._terrain.terrain_levels = torch.zeros_like(self._terrain.terrain_levels)
+        self._terrain.terrain_levels = torch.ones_like(self._terrain.terrain_levels) * 8
         self._terrain.env_origins = self._terrain.terrain_origins[self._terrain.terrain_levels, self._terrain.terrain_types]
 
     def _init_buffers(self):

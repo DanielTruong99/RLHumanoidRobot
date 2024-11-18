@@ -19,6 +19,7 @@ from omni.isaac.lab.utils.noise import AdditiveUniformNoiseCfg as UNoiseCfg
 from omni.isaac.lab.utils.noise import NoiseModelCfg, NoiseModel
 from omni.isaac.lab.managers import EventTermCfg
 from omni.isaac.lab.terrains.terrain_generator_cfg import TerrainGeneratorCfg
+from omni.isaac.lab.managers import SceneEntityCfg
 
 ##
 #! user Custom configs
@@ -32,12 +33,59 @@ from omni.isaac.lab.terrains.config.rough import ROUGH_TERRAINS_CFG
 from exts.rl_robot.rl_robot.lab_assets import LEGPARKOUR_CFG
 
 class NewCustomNoiseModel(NoiseModel):
-    def __init__(self, num_envs: int, noise_model_cfg: NoiseModelCfg, device: str):
-        super().__init__(num_envs, noise_model_cfg) #type: ignore
+    def __init__(self, noise_model_cfg: NoiseModelCfg, num_envs: int, device: str):
+        super().__init__(noise_model_cfg, num_envs, device) #type: ignore
         self._device = device
 
 @configclass
 class EventCfg:
+    physics_material = EventTermCfg(
+        func=mdp.randomize_rigid_body_material,
+        mode="reset",
+        params={
+            "asset_cfg": SceneEntityCfg("robot", body_names=".*"),
+            "static_friction_range": (0.8, 1.0),
+            "dynamic_friction_range": (0.6, 1.0),
+            "restitution_range": (0.0, 0.0),
+            "num_buckets": 64,
+        },
+    )
+
+    robot_joint_stiffness_and_damping = EventTermCfg(
+        func=mdp.randomize_actuator_gains,
+        # min_step_count_between_reset=720,
+        mode="reset",
+        params={
+            "asset_cfg": SceneEntityCfg("robot", joint_names=".*"),
+            "stiffness_distribution_params": (0.0, 0.75),
+            "damping_distribution_params": (0.0, 0.3),
+            "operation": "add",
+            "distribution": "uniform",
+        },
+    )
+
+    robot_joint_friction = EventTermCfg(
+        func=mdp.randomize_joint_parameters,
+        # min_step_count_between_reset=720,
+        mode="reset",
+        params={
+            "asset_cfg": SceneEntityCfg("robot", joint_names=".*"),
+            "friction_distribution_params": (0.0, 0.5),
+            "operation": "add",
+            "distribution": "uniform",
+        },
+    )
+
+    add_base_mass = EventTermCfg(
+        func=mdp.randomize_rigid_body_mass,
+        mode="reset",
+        params={
+            "asset_cfg": SceneEntityCfg("robot", body_names="base"),
+            "mass_distribution_params": (-5.0, 5.0),
+            "operation": "add",
+        },
+    )
+
     reset_base = EventTermCfg(
         func=mdp.reset_root_state_uniform,
         mode="reset",
@@ -95,7 +143,7 @@ class EventCfg:
         func=mdp.push_by_setting_velocity,
         mode="interval",
         interval_range_s=(2.5, 2.5),
-        params={"velocity_range": {"x": (-0.7, 0.7), "y": (-0.7, 0.7)}},
+        params={"velocity_range": {"x": (-1.0, 1.0), "y": (-1.0, 1.0)}},
     )
 
     # # // deprecated
@@ -107,9 +155,9 @@ class EventCfg:
 @configclass
 class CommandCfg:
     resampling_time_range = (5.0, 5.0)
-    ranges_lin_vel_x = (0.3, 4.5)
-    ranges_lin_vel_y = (-0.0, 0.0)
-    ranges_ang_vel_z = (-0.15, 0.15)
+    ranges_lin_vel_x = (0.0, 1.5)
+    ranges_lin_vel_y = (-1.0, 1.0)
+    ranges_ang_vel_z = (-0.3, 0.3)
 
 @configclass
 class SimpleWalkingRobotEnvCfg(DirectRLEnvCfg):
@@ -137,7 +185,7 @@ class SimpleWalkingRobotEnvCfg(DirectRLEnvCfg):
     decimation = 4
     action_scale = 1.0
     num_actions = 10
-    num_observations = 3 + 3 + 3 + 3 + 10 + 10 + 10 + 2 + 1 + 3 #! NEED TO BE CHANGED
+    num_observations = 3 + 3 + 3 + 3 + 10 + 10 + 10 + 2 + 1#! NEED TO BE CHANGED
     num_states = 0
 
     #* simulation
@@ -245,44 +293,42 @@ class SimpleWalkingRobotEnvCfg(DirectRLEnvCfg):
 
     #! deprecated
     #* observation noise model configuration
-    # observation_noise_model = NoiseModelCfg(
-    #     class_type=NewCustomNoiseModel,
-    #     noise_cfg=UNoiseCfg(
-    #         n_min=torch.cat([
-    #             torch.tensor([-0.1] * 3, device=sim.device),   # v: base linear velocity (3,)
-    #             torch.tensor([-0.2] * 3, device=sim.device),   # w: base angular velocity (3,)
-    #             torch.tensor([-0.05] * 3, device=sim.device),  # g: projected gravity (3,)
-    #             torch.tensor([0.0] * 3, device=sim.device),    # c: commands (3,)
-    #             torch.tensor([-0.01] * 10, device=sim.device), # p: joint positions (10,)
-    #             torch.tensor([-1.5] * 10, device=sim.device),  # p_dot: joint velocities (10,)
-    #             torch.tensor([0.0] * 10, device=sim.device),   # a: last actions (10,)
-    #             torch.tensor([0.0] * 2, device=sim.device),    # foot_contact_state: foot_contact_state (2,)
-    #             torch.tensor([0.0] * 1, device=sim.device),    # estimated_height: estimated_height (1,)
-    #             torch.tensor([-0.1] * 1, device=sim.device)  # height_data: height scanner (220,)
-    #         ]), 
-    #         n_max=torch.cat([
-    #             torch.tensor([0.1] * 3, device=sim.device),    # v: base linear velocity (3,)
-    #             torch.tensor([0.2] * 3, device=sim.device),    # w: base angular velocity (3,)
-    #             torch.tensor([0.05] * 3, device=sim.device),   # g: projected gravity (3,)
-    #             torch.tensor([0.0] * 3, device=sim.device),    # c: commands (3,)
-    #             torch.tensor([0.01] * 10, device=sim.device),  # p: joint positions (10,)
-    #             torch.tensor([1.5] * 10, device=sim.device),   # p_dot: joint velocities (10,)
-    #             torch.tensor([0.0] * 10, device=sim.device),   # a: last actions (10,)
-    #             torch.tensor([0.0] * 2, device=sim.device),    # foot_contact_state: foot_contact_state (2,)
-    #             torch.tensor([0.0] * 1, device=sim.device),    # estimated_height: estimated_height (1,)
-    #             torch.tensor([0.1] * 1, device=sim.device)   # height_data: height scanner (220,)
-    #         ])
-    #     )
-    # )
+    observation_noise_model = NoiseModelCfg(
+        class_type=NewCustomNoiseModel,
+        noise_cfg=UNoiseCfg(
+            n_min=torch.cat([
+                torch.tensor([-0.1] * 3, device=sim.device),   # v: base linear velocity (3,)
+                torch.tensor([-0.05] * 3, device=sim.device),   # w: base angular velocity (3,)
+                torch.tensor([-0.05] * 3, device=sim.device),  # g: projected gravity (3,)
+                torch.tensor([0.0] * 3, device=sim.device),    # c: commands (3,)
+                torch.tensor([-0.005] * 10, device=sim.device), # p: joint positions (10,)
+                torch.tensor([-0.01] * 10, device=sim.device),  # p_dot: joint velocities (10,)
+                torch.tensor([0.0] * 10, device=sim.device),   # a: last actions (10,)
+                torch.tensor([-0.1] * 2, device=sim.device),    # foot_contact_state: foot_contact_state (2,)
+                torch.tensor([-0.05] * 1, device=sim.device),    # estimated_height: estimated_height (1,)
+            ]), 
+            n_max=torch.cat([
+                torch.tensor([0.1] * 3, device=sim.device),    # v: base linear velocity (3,)
+                torch.tensor([0.05] * 3, device=sim.device),    # w: base angular velocity (3,)
+                torch.tensor([0.05] * 3, device=sim.device),   # g: projected gravity (3,)
+                torch.tensor([0.0] * 3, device=sim.device),    # c: commands (3,)
+                torch.tensor([0.005] * 10, device=sim.device),  # p: joint positions (10,)
+                torch.tensor([0.01] * 10, device=sim.device),   # p_dot: joint velocities (10,)
+                torch.tensor([0.0] * 10, device=sim.device),   # a: last actions (10,)
+                torch.tensor([0.1] * 2, device=sim.device),    # foot_contact_state: foot_contact_state (2,)
+                torch.tensor([0.05] * 1, device=sim.device),    # estimated_height: estimated_height (1,)
+            ])
+        )
+    )
 
     #* reward configuration
     #! encourage reward 
-    base_height_target = 0.85
-    lin_vel_reward_scale = 15.0
+    base_height_target = 0.9
+    lin_vel_reward_scale = 10.0
     yaw_rate_reward_scale = 5.0
-    flat_orientation_reward_scale = 7.0
-    base_height_reward_scale = 5.0
-    joint_regularization_reward_scale = 3.0
+    flat_orientation_reward_scale = 5.0
+    base_height_reward_scale = 2.0
+    joint_regularization_reward_scale = 1.0
 
     #! penalty reward
     joint_velocity_reward_scale = 0.0
@@ -290,9 +336,9 @@ class SimpleWalkingRobotEnvCfg(DirectRLEnvCfg):
     first_order_action_rate_reward_scale = -1e-3
     second_order_action_rate_reward_scale = -1e-4
     undesired_contacts_reward_scale = -0.0
-    applied_torque_reward_scale = -1e-6
+    applied_torque_reward_scale = -1e-5
     feet_stumble_reward_scale = 0.0
-    joint_pos_limit_reward_scale = -0.0
+    joint_pos_limit_reward_scale = -1.0
     joint_vel_limit_reward_scale = -0.0
 
     #! terminated penalty reward
@@ -304,8 +350,16 @@ class SimpleWalkingRobotPlayEnvCfg(SimpleWalkingRobotEnvCfg):
     def __post_init__(self):
         super().__post_init__() #type: ignore
         self.observation_noise_model = None
-        self.events.push_robot = None #type: ignore
+        
         self.commands = None
+
+        self.events.physics_material = None #type: ignore
+        self.events.robot_joint_stiffness_and_damping = None #type: ignore
+        self.events.robot_joint_friction = None #type: ignore
+        self.events.add_base_mass = None #type: ignore
+        self.events.reset_base = None #type: ignore
+        self.events.push_robot = None #type: ignore
+        self.events.reset_robot_joints = None #type: ignore
 
         self.terrain.terrain_type = "plane"
 

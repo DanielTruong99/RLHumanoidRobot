@@ -46,6 +46,6 @@ class SimpleWalkingRobotPPORunnerCfg(RslRlOnPolicyRunnerCfg):
 
 @configclass
 class SimpleWalkingRobotPPOPlayRunnerCfg(SimpleWalkingRobotPPORunnerCfg):
-    resume = False
-    # load_checkpoint = "model_10000.pt"
-    # load_run = "2024-10-30_02-36-32"
+    resume = True
+    load_checkpoint = "model_9999.pt"
+    load_run = "2024-11-13_17-04-19"

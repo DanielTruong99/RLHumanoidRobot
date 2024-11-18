@@ -132,19 +132,20 @@ class LegLeapEnvCfg(LegPlanarWalkEnvCfg):
 @configclass
 class LegLeapPlayEnvCfg(LegLeapEnvCfg):
     episode_length_s = 10.0
-    viewer: ViewerCfg = ViewerCfg(
-        origin_type="asset_root",
-        asset_name="robot",
-        env_index=0,
-        eye=(-2.5, 2.5, 1.5),
-        lookat=(0.0, 0.0, 0.0),
-    )
+    # viewer: ViewerCfg = ViewerCfg(
+    #     origin_type="asset_root",
+    #     asset_name="robot",
+    #     env_index=0,
+    #     eye=(-2.5, 2.5, 1.5),
+    #     lookat=(0.0, 0.0, 0.0),
+    # )
 
     def __post_init__(self):
         super().__post_init__() #type: ignore
         # self.commands.heading_control_stiffness = 0.15
 
         self.events.push_robot = None #type: ignore
+        self.curriculum = False
 
 
 

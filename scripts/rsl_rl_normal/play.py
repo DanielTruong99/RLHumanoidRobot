@@ -131,6 +131,12 @@ def main():
     # obtain the trained policy for inference
     policy = ppo_runner.get_inference_policy(device=env.unwrapped.device)
 
+    # # policy.eval()
+    # #! Compile the model to TorchScript
+    # example_input = torch.rand(2, 45)
+    # traced_script_module = torch.jit.trace(policy, example_input)
+    # traced_script_module.save("policy.pt")
+
     # # export policy to onnx/jit
     export_model_dir = os.path.join(os.path.dirname(resume_path), "exported")
     export_policy_as_jit(
@@ -179,7 +185,7 @@ def main():
             # translation = env.unwrapped._pos_command_w.clone() #type: ignore
             # translation[:, 2] += 0.75
             # goal_visualizer.visualize(translation) #type: ignore
-            env.unwrapped._commands[:, 0] = 0.95
+            env.unwrapped._commands[:, 0] = 0.0
             env.unwrapped._commands[:, 1] = 0.0
             env.unwrapped._commands[:, 2] = 0.0
 
