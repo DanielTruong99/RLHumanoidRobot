@@ -54,7 +54,8 @@ from omni.isaac.lab_tasks.utils.wrappers.rsl_rl import (
 from omni.isaac.lab.markers import VisualizationMarkers, VisualizationMarkersCfg
 
 # Import extensions to set up environment tasks
-import rl_robot.lab_tasks  # noqa: F401
+# import rl_robot.lab_tasks  # noqa: F401
+import exts.rl_robot.rl_robot.lab_tasks
 
 from omni.isaac.core.loggers.data_logger import DataLogger
 
@@ -138,10 +139,10 @@ def main():
     # traced_script_module.save("policy.pt")
 
     # # export policy to onnx/jit
-    export_model_dir = os.path.join(os.path.dirname(resume_path), "exported")
-    export_policy_as_jit(
-        ppo_runner.alg.actor_critic, ppo_runner.obs_normalizer, path=export_model_dir, filename="policy.pt"
-    )
+    # export_model_dir = os.path.join(os.path.dirname(resume_path), "exported")
+    # export_policy_as_jit(
+    #     ppo_runner.alg.actor_critic, ppo_runner.obs_normalizer, path=export_model_dir, filename="policy.pt"
+    # )
     # export_policy_as_onnx(
     #     ppo_runner.alg.actor_critic, normalizer=ppo_runner.obs_normalizer, path=export_model_dir, filename="policy.onnx"
     # )
@@ -185,35 +186,36 @@ def main():
             # translation = env.unwrapped._pos_command_w.clone() #type: ignore
             # translation[:, 2] += 0.75
             # goal_visualizer.visualize(translation) #type: ignore
-            env.unwrapped._commands[:, 0] = 0.0
-            env.unwrapped._commands[:, 1] = 0.0
-            env.unwrapped._commands[:, 2] = 0.0
+            # env.unwrapped._commands[:, 0] = 0.5
+            # env.unwrapped._commands[:, 1] = 0.0
+            # env.unwrapped._commands[:, 2] = 0.0
+            env.unwrapped.command_manager._terms['base_velocity'].vel_command_b = torch.tensor([[1.5, 0.0, 0.0]], device=env.unwrapped.device) #type: ignore
 
             policy_counter += 1
 
-            if policy_counter < stop_state_log:
-                data_frame = {
-                    'time_step': policy_counter*policy_step_dt,
-                    'c_x': env.unwrapped._commands[0, 0].item(),
-                    'c_y': env.unwrapped._commands[0, 1].item(),
-                    'c_z': env.unwrapped._commands[0, 2].item(),
-                    'base_x': env.env.scene["robot"].data.root_pos_w[0, 0].item(),
-                    'base_y': env.env.scene["robot"].data.root_pos_w[0, 1].item(),
-                    'base_z': env.env.scene["robot"].data.root_pos_w[0, 2].item(),
-                    'base_vx': env.env.scene["robot"].data.root_lin_vel_b[0, 0].item(),
-                    'base_vy': env.env.scene["robot"].data.root_lin_vel_b[0, 1].item(),
-                    'base_vz': env.env.scene["robot"].data.root_lin_vel_b[0, 2].item(),
-                    'base_wx': env.env.scene["robot"].data.root_ang_vel_b[0, 0].item(),
-                    'base_wy': env.env.scene["robot"].data.root_ang_vel_b[0, 1].item(),
-                    'base_wz': env.env.scene["robot"].data.root_ang_vel_b[0, 2].item(),
-                    **{'pos_' + key : env.env.scene["robot"].data.joint_pos[0, env.env.scene["robot"].find_joints(key)[0]].item() for index, key in enumerate(DOF_NAMES)},
-                    **{'vel_' + key : env.env.scene["robot"].data.joint_vel[0, env.env.scene["robot"].find_joints(key)[0]].item() for index, key in enumerate(DOF_NAMES)},
-                    **{'torque_' + key : env.env.scene["robot"].data.applied_torque[0, env.env.scene["robot"].find_joints(key)[0]].item() for index, key in enumerate(DOF_NAMES)},
-                }
+            # if policy_counter < stop_state_log:
+            #     data_frame = {
+            #         'time_step': policy_counter*policy_step_dt,
+            #         'c_x': env.unwrapped._commands[0, 0].item(),
+            #         'c_y': env.unwrapped._commands[0, 1].item(),
+            #         'c_z': env.unwrapped._commands[0, 2].item(),
+            #         'base_x': env.env.scene["robot"].data.root_pos_w[0, 0].item(),
+            #         'base_y': env.env.scene["robot"].data.root_pos_w[0, 1].item(),
+            #         'base_z': env.env.scene["robot"].data.root_pos_w[0, 2].item(),
+            #         'base_vx': env.env.scene["robot"].data.root_lin_vel_b[0, 0].item(),
+            #         'base_vy': env.env.scene["robot"].data.root_lin_vel_b[0, 1].item(),
+            #         'base_vz': env.env.scene["robot"].data.root_lin_vel_b[0, 2].item(),
+            #         'base_wx': env.env.scene["robot"].data.root_ang_vel_b[0, 0].item(),
+            #         'base_wy': env.env.scene["robot"].data.root_ang_vel_b[0, 1].item(),
+            #         'base_wz': env.env.scene["robot"].data.root_ang_vel_b[0, 2].item(),
+            #         **{'pos_' + key : env.env.scene["robot"].data.joint_pos[0, env.env.scene["robot"].find_joints(key)[0]].item() for index, key in enumerate(DOF_NAMES)},
+            #         **{'vel_' + key : env.env.scene["robot"].data.joint_vel[0, env.env.scene["robot"].find_joints(key)[0]].item() for index, key in enumerate(DOF_NAMES)},
+            #         **{'torque_' + key : env.env.scene["robot"].data.applied_torque[0, env.env.scene["robot"].find_joints(key)[0]].item() for index, key in enumerate(DOF_NAMES)},
+            #     }
 
-                data_logger.log_states(data_frame)
-            else:
-                data_logger.save_log('analysis/data/state_log.csv')
+            #     data_logger.log_states(data_frame)
+            # else:
+            #     data_logger.save_log('analysis/data/state_log.csv')
 
         if args_cli.video:
             timestep += 1
