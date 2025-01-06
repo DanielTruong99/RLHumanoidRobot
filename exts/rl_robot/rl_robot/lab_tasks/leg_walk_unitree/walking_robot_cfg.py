@@ -66,9 +66,19 @@ class WalkingRobotObservationsCfg(ObservationsCfg):
             self.enable_corruption = False
             self.concatenate_terms = True
 
+    @configclass
+    class DebugCfg(ObservationGroupCfg):
+        """Observations for debug group."""
+        joint_torque = ObservationTermCfg(func=custom_mdp.joint_torque)
+
+        def __post_init__(self):
+            self.enable_corruption = False
+            self.concatenate_terms = True
+
     # observation groups
     policy: PolicyCfg = PolicyCfg() 
     critic: CriticCfg = CriticCfg()
+    debug: DebugCfg = DebugCfg()
     
 
 @configclass 
@@ -254,9 +264,14 @@ class WalkingRobotEnvPLayCfg(WalkingRobotEnvCfg):
         self.events.base_external_force_torque = None
         self.events.push_robot = None #type: ignore
 
-        self.scene.terrain.terrain_type = "plane"
-        self.scene.terrain.terrain_generator.curriculum = False #type: ignore
-        self.curriculum.terrain_levels = None #type: ignore
+        # self.scene.terrain.terrain_type = "plane"
+        # self.scene.terrain.terrain_generator.curriculum = False #type: ignore
+        # self.curriculum.terrain_levels = None #type: ignore
+
+        # self.viewer.asset_name = "robot"
+        # self.viewer.origin_type = "asset_root"
+        # self.viewer.eye = (0.0, 5.0, 2.0)
+
 
         # self.sim.use_fabric = False
         # self.sim.device = "cpu"

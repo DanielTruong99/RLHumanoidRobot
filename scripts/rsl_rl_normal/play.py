@@ -52,6 +52,8 @@ from omni.isaac.lab_tasks.utils.wrappers.rsl_rl import (
     export_policy_as_onnx,
 )
 from omni.isaac.lab.markers import VisualizationMarkers, VisualizationMarkersCfg
+from omni.isaac.lab.utils.assets import ISAAC_NUCLEUS_DIR
+from omni.isaac.lab.utils.math import quat_from_angle_axis
 
 # Import extensions to set up environment tasks
 # import rl_robot.lab_tasks  # noqa: F401
@@ -72,6 +74,8 @@ DOF_NAMES = [
     'L_toe_joint'
 ]
 
+DEBUG = True
+
 import numpy as np 
 import pandas as pd
 from collections import defaultdict
@@ -84,10 +88,26 @@ class Logger:
 
     def log_states(self, dict):
         for key, value in dict.items():
-            self.log_state(key, value)
+            if isinstance(value, list):
+                self.state_log[key].extend(value)
+            else:
+                self.log_state(key, value)
 
     def save_log(self, path):
         pd.DataFrame(self.state_log).to_csv(path, index=False)
+
+def get_vector_visualizer_parameters(rs, re):
+    t = (rs + re) / 2.0
+    h = torch.norm(re - rs)
+
+    u1 = torch.zeros_like(re); u1[:, -1] = 1.0
+    u2 = (re - rs) / h
+    axis = torch.cross(u1, u2)
+    angle = torch.acos(torch.dot(u1.flatten(), u2.flatten()))
+    q = quat_from_angle_axis(angle.unsqueeze(dim=0), axis)
+
+    return t, q, h
+
 def main():
     """Play with RSL-RL agent."""
     # parse configuration
@@ -146,42 +166,93 @@ def main():
     # export_policy_as_onnx(
     #     ppo_runner.alg.actor_critic, normalizer=ppo_runner.obs_normalizer, path=export_model_dir, filename="policy.onnx"
     # )
-    #! Create a logger
+    # create data logger
     data_logger = Logger()
     
 
-    #! create marker
-    # goal_visualizer = VisualizationMarkers(VisualizationMarkersCfg(
-    #     prim_path="/World/visualization",
-    #     markers={
-    #         "sphere": sim_utils.SphereCfg(
-    #             radius=0.1,
-    #             visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.0, 1.0, 0.0)),
-    #         ),
-    #     }
-    # ))
-
-    
+    if DEBUG:
+        # create visualizers
+        frame_visualizer = VisualizationMarkers(VisualizationMarkersCfg(
+            prim_path="/World/visualization/frame",
+            markers={
+                "frame": sim_utils.UsdFileCfg(
+                    usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/UIElements/frame_prim.usd",
+                    scale=(0.25, 0.25, 0.25),
+                ),
+            }   
+        ))
+        pos_visualizer = VisualizationMarkers(VisualizationMarkersCfg(
+            prim_path="/World/visualization/pos",
+            markers={
+                "cylinder": sim_utils.CylinderCfg(
+                    radius=0.015,
+                    height=1.0,
+                    visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(1.0, 0.0, 0.0)),
+                ),
+            }
+        ))
+        vel_visualizer = VisualizationMarkers(VisualizationMarkersCfg(
+            prim_path="/World/visualization/vel",
+            markers={
+                "cylinder": sim_utils.CylinderCfg(
+                    radius=0.015,
+                    height=1.0,
+                    visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(1.0, 1.0, 1.0)),
+                ),
+            }
+        ))
+        ang_vel_visualizer = VisualizationMarkers(VisualizationMarkersCfg(
+            prim_path="/World/visualization/ang_vel",
+            markers={
+                "cylinder": sim_utils.CylinderCfg(
+                    radius=0.015,
+                    height=1.0,
+                    visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(1.0, 0.0, 0.0)),
+                ),
+            }
+        ))
 
     # reset environment
     obs, _ = env.get_observations()
     timestep = 0
     policy_counter = 0
     policy_step_dt = env.unwrapped.step_dt
-    stop_state_log_s = 5.0
-    # stop_state_log = env.env.max_episode_length
+    stop_state_log_s = 10.0
     stop_state_log = int(stop_state_log_s / policy_step_dt)    # simulate environment
 
-
-
     while simulation_app.is_running():
-        # run everything in inference mode
         with torch.inference_mode():
-            # agent stepping
             actions = policy(obs)
-            # env stepping
             obs, _, _, _ = env.step(actions)
 
+            if DEBUG:
+                # position of the robot base visualizer
+                if env_cfg.scene.terrain.terrain_type == "flat": #type: ignore
+                    rs = torch.tensor([[0.0, 0.0, 0.0]], device=env_cfg.sim.device)
+                else:
+                    rs = env.unwrapped.scene["terrain"].env_origins
+                root_state = env.unwrapped.scene["robot"].data.root_state_w.clone() #type: ignore
+                root_pos = root_state[:, 0:3]
+                t, q, h = get_vector_visualizer_parameters(rs, root_pos)
+                scale = torch.tensor([[1.0, 1.0, h]], device=env_cfg.sim.device)
+                pos_visualizer.visualize(t, q, scale)
+
+                # robot base frame visualizer
+                frame_visualizer.visualize(root_pos, root_state[:, 3:7])
+
+                # velocity of the robot base visualizer
+                robot_lin_vel = root_state[:, 7:10]
+                t, q, h = get_vector_visualizer_parameters(root_pos, root_pos + robot_lin_vel)
+                scale = torch.tensor([[1.0, 1.0, h]], device=env_cfg.sim.device)
+                vel_visualizer.visualize(t, q, scale)
+
+                # # angular velocity of the robot base visualizer
+                # robot_ang_vel = root_state[:, 10:13] * 1.0
+                # t, q, h = get_vector_visualizer_parameters(root_pos, root_pos + robot_ang_vel)
+                # scale = torch.tensor([[1.0, 1.0, h]], device=env_cfg.sim.device)
+                # ang_vel_visualizer.visualize(t, q, scale)
+
+            # set the command for the robot
             # #* command [x, y, heading]
             # translation = env.unwrapped._pos_command_w.clone() #type: ignore
             # translation[:, 2] += 0.75
@@ -189,7 +260,7 @@ def main():
             # env.unwrapped._commands[:, 0] = 0.5
             # env.unwrapped._commands[:, 1] = 0.0
             # env.unwrapped._commands[:, 2] = 0.0
-            env.unwrapped.command_manager._terms['base_velocity'].vel_command_b = torch.tensor([[1.5, 0.0, 0.0]], device=env.unwrapped.device) #type: ignore
+            env.unwrapped.command_manager._terms['base_velocity'].vel_command_b = torch.tensor([[0.5, 0.0, 0.0]], device=env.unwrapped.device) #type: ignore
 
             policy_counter += 1
 
@@ -222,6 +293,21 @@ def main():
             # Exit the play loop after recording one video
             if timestep == args_cli.video_length:
                 break
+
+        # if policy_counter == stop_state_log:
+        #     vis_obs_manager = env.unwrapped.manager_visualizers["observation_manager"] #type: ignore
+        #     vis_base_w = vis_obs_manager._term_visualizers[0] #type: ignore
+ 
+        #     data_frame = {
+        #         'time': [index * policy_step_dt for index in range(len((vis_base_w._y_data[0])))],
+        #         'base_wx': vis_base_w._y_data[0],
+        #         'base_wy': vis_base_w._y_data[1],
+        #         'base_wz': vis_base_w._y_data[2],
+        #     }
+
+        #     data_logger.log_states(data_frame)
+        #     data_logger.save_log('analysis/data/state_log.csv')
+        #     break
 
     # close the simulator
     env.close()

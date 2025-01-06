@@ -76,7 +76,26 @@ def plot_joint_positions():
     plt.tight_layout()
     plt.show()
 
+def plot_base_w():
+    font_size = 9
+    font_name = "DejaVu Sans"
+    fig, ax = plt.subplots(1, 1, figsize=(5, 3))
+
+    df.plot(x='time', y='base_wz', ax=ax, legend=False)
+    ax.set_xlabel('Time (s)', fontsize=font_size, fontname=font_name)
+    ax.set_ylabel('Base z-axis angular velocity (rad/s)', fontsize=font_size, fontname=font_name)
+    ax.grid(True, which='major', axis='x', linestyle='--')
+    ax.minorticks_on()
+    ax.legend([r'$\omega_z$'], fontsize=font_size, prop={'family': font_name})
+    ax.ticklabel_format(style='sci', axis='both')
+    ax.tick_params(axis='both', which='both', direction='in', labelsize=font_size)
+    ax.xaxis.set_major_locator(plt.MultipleLocator(0.5)) # type: ignore
+
+    plt.tight_layout()
+    plt.show()
+
 if __name__ == "__main__":
-    plot_base_velocity()
+    plot_base_w()
+    # plot_base_velocity()
     # plot_dof_torque()
     # plot_joint_positions()
