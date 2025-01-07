@@ -55,6 +55,8 @@ from omni.isaac.lab.markers import VisualizationMarkers, VisualizationMarkersCfg
 from omni.isaac.lab.utils.assets import ISAAC_NUCLEUS_DIR
 from omni.isaac.lab.utils.math import quat_from_angle_axis
 
+from omni.isaac.lab.devices import Se2Keyboard
+
 # Import extensions to set up environment tasks
 # import rl_robot.lab_tasks  # noqa: F401
 import exts.rl_robot.rl_robot.lab_tasks
@@ -169,7 +171,11 @@ def main():
     # create data logger
     data_logger = Logger()
     
-
+    # teleop_interface = Se2Keyboard(
+    #     v_x_sensitivity=0.05 * 1.0, 
+    #     v_y_sensitivity=0.05 * 1.0,
+    #     omega_z_sensitivity=0.05 * 1.0,
+    # )
     if DEBUG:
         # create visualizers
         frame_visualizer = VisualizationMarkers(VisualizationMarkersCfg(
@@ -219,7 +225,7 @@ def main():
     policy_step_dt = env.unwrapped.step_dt
     stop_state_log_s = 10.0
     stop_state_log = int(stop_state_log_s / policy_step_dt)    # simulate environment
-
+    # teleop_interface.reset()
     while simulation_app.is_running():
         with torch.inference_mode():
             actions = policy(obs)
@@ -260,7 +266,8 @@ def main():
             # env.unwrapped._commands[:, 0] = 0.5
             # env.unwrapped._commands[:, 1] = 0.0
             # env.unwrapped._commands[:, 2] = 0.0
-            env.unwrapped.command_manager._terms['base_velocity'].vel_command_b = torch.tensor([[0.5, 0.0, 0.0]], device=env.unwrapped.device) #type: ignore
+            # base_cmds = teleop_interface.advance().astype(np.float32)
+            # env.unwrapped.command_manager._terms['base_velocity'].vel_command_b = torch.tensor([[base_cmds[0], base_cmds[1], base_cmds[2]]], device=env.unwrapped.device) #type: ignore
 
             policy_counter += 1
 

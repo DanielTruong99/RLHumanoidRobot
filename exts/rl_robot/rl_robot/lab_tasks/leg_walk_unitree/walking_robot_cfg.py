@@ -1,4 +1,5 @@
 import omni.isaac.lab_tasks.manager_based.locomotion.velocity.mdp as mdp
+import math
 
 from omni.isaac.lab.actuators import ImplicitActuatorCfg
 from omni.isaac.lab_tasks.manager_based.locomotion.velocity.velocity_env_cfg import (
@@ -78,7 +79,8 @@ class WalkingRobotObservationsCfg(ObservationsCfg):
     # observation groups
     policy: PolicyCfg = PolicyCfg() 
     critic: CriticCfg = CriticCfg()
-    debug: DebugCfg = DebugCfg()
+    #! Just for debugging
+    # debug: DebugCfg = DebugCfg()
     
 
 @configclass 
@@ -131,6 +133,16 @@ class WalkingRobotEventCfg(EventCfg):
 
 @configclass
 class WalkingRobotRewardCfg(RewardsCfg):
+    track_lin_vel_xy_exp = RewardTermCfg(
+        func=custom_mdp.weighted_track_lin_vel_xy_exp, weight=1.0, params={"command_name": "base_velocity", "std": math.sqrt(0.25)}
+    )
+    track_ang_vel_z_exp = RewardTermCfg(
+        func=custom_mdp.weighted_track_ang_vel_z_exp, weight=0.5, params={"command_name": "base_velocity", "std": math.sqrt(0.25)}
+    )
+
+    dof_torques_l2 = RewardTermCfg(func=custom_mdp.weighted_joint_torques_l2, weight=-1.0e-5)
+
+
     base_height_l2 = RewardTermCfg(
         func=mdp.base_height_l2,
         weight=-0.5,
@@ -149,7 +161,7 @@ class WalkingRobotRewardCfg(RewardsCfg):
     )
 
     is_alive = RewardTermCfg(
-        func=mdp.is_alive,
+        func=custom_mdp.weighted_is_alive,
         weight=0.15,
     )
 
@@ -169,7 +181,7 @@ class WalkingRobotRewardCfg(RewardsCfg):
     )
 
 @configclass
-class CommandsCfg:
+class WalkingRobotCommandsCfg:
     """Command specifications for the MDP."""
 
     base_velocity = mdp.UniformVelocityCommandCfg(
@@ -181,7 +193,7 @@ class CommandsCfg:
         heading_control_stiffness=0.5,
         debug_vis=False,
         ranges=mdp.UniformVelocityCommandCfg.Ranges(
-            lin_vel_x=(-0.1, 1.5), lin_vel_y=(-0.3, 0.3), ang_vel_z=(-1.0, 1.0)
+            lin_vel_x=(-0.0, 4.5), lin_vel_y=(-0.3, 0.3), ang_vel_z=(-1.0, 1.0)
         ),
     )
 
@@ -190,11 +202,13 @@ class WalkingRobotEnvCfg(LocomotionVelocityRoughEnvCfg):
     observations: WalkingRobotObservationsCfg = WalkingRobotObservationsCfg()
     rewards: WalkingRobotRewardCfg = WalkingRobotRewardCfg()
     events: WalkingRobotEventCfg = WalkingRobotEventCfg()
-    commands: CommandsCfg = CommandsCfg()
+    commands: WalkingRobotCommandsCfg = WalkingRobotCommandsCfg()
 
     def __post_init__(self):
         super().__post_init__()
 
+        ''' #!Terrain setup'''
+        self.scene.terrain.terrain_generator = custom_mdp.TERRAINS_CFG
 
         ''' #!Action setup
             The default action space setup includes:
@@ -247,7 +261,7 @@ class WalkingRobotEnvCfg(LocomotionVelocityRoughEnvCfg):
 
         ''' #!Reward setup'''
         self.rewards.track_lin_vel_xy_exp.weight = 3.0
-        self.rewards.track_ang_vel_z_exp.weight = 1.5
+        self.rewards.track_ang_vel_z_exp.weight = 2.5
         self.rewards.dof_pos_limits.weight = -5.0
         self.rewards.flat_orientation_l2.weight = -1.0
         self.rewards.feet_air_time = None #type: ignore
@@ -264,9 +278,9 @@ class WalkingRobotEnvPLayCfg(WalkingRobotEnvCfg):
         self.events.base_external_force_torque = None
         self.events.push_robot = None #type: ignore
 
-        # self.scene.terrain.terrain_type = "plane"
-        # self.scene.terrain.terrain_generator.curriculum = False #type: ignore
-        # self.curriculum.terrain_levels = None #type: ignore
+        self.scene.terrain.terrain_type = "plane"
+        self.scene.terrain.terrain_generator.curriculum = False #type: ignore
+        self.curriculum.terrain_levels = None #type: ignore
 
         # self.viewer.asset_name = "robot"
         # self.viewer.origin_type = "asset_root"
