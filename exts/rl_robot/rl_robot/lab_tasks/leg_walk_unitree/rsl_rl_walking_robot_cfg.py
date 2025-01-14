@@ -21,7 +21,7 @@ class RslRlPpoActorCriticRecurrentCfg(RslRlPpoActorCriticCfg):
 @configclass
 class WalkingRobotPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 24
-    max_iterations = 20000
+    max_iterations = 30000
     save_interval = 50
     experiment_name = "walking_robot_unitree"   
     empirical_normalization = False

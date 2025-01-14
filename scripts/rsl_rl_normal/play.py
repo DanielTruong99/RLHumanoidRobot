@@ -267,7 +267,7 @@ def main():
             # env.unwrapped._commands[:, 1] = 0.0
             # env.unwrapped._commands[:, 2] = 0.0
             # base_cmds = teleop_interface.advance().astype(np.float32)
-            # env.unwrapped.command_manager._terms['base_velocity'].vel_command_b = torch.tensor([[base_cmds[0], base_cmds[1], base_cmds[2]]], device=env.unwrapped.device) #type: ignore
+            env.unwrapped.command_manager._terms['base_velocity'].vel_command_b = torch.tensor([[1.5, 0.0, 0.0]], device=env.unwrapped.device) #type: ignore
 
             policy_counter += 1
 

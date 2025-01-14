@@ -133,11 +133,18 @@ class WalkingRobotEventCfg(EventCfg):
 
 @configclass
 class WalkingRobotRewardCfg(RewardsCfg):
+    # track_lin_vel_xy_exp = RewardTermCfg(
+    #     func=custom_mdp.weighted_track_lin_vel_xy_exp, weight=1.0, params={"command_name": "base_velocity", "std": math.sqrt(0.25)}
+    # )
+    # track_ang_vel_z_exp = RewardTermCfg(
+    #     func=custom_mdp.weighted_track_ang_vel_z_exp, weight=0.5, params={"command_name": "base_velocity", "std": math.sqrt(0.25)}
+    # )
+
     track_lin_vel_xy_exp = RewardTermCfg(
-        func=custom_mdp.weighted_track_lin_vel_xy_exp, weight=1.0, params={"command_name": "base_velocity", "std": math.sqrt(0.25)}
+        func=mdp.track_lin_vel_xy_exp, weight=1.0, params={"command_name": "base_velocity", "std": math.sqrt(0.25)}
     )
     track_ang_vel_z_exp = RewardTermCfg(
-        func=custom_mdp.weighted_track_ang_vel_z_exp, weight=0.5, params={"command_name": "base_velocity", "std": math.sqrt(0.25)}
+        func=mdp.track_ang_vel_z_exp, weight=0.5, params={"command_name": "base_velocity", "std": math.sqrt(0.25)}
     )
 
     dof_torques_l2 = RewardTermCfg(func=custom_mdp.weighted_joint_torques_l2, weight=-1.0e-5)
